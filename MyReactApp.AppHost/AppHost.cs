@@ -1,6 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var apiService = builder.AddProject<Projects.MyReactApp_api>("apiservice");
+var apiService = builder.AddProject<Projects.MyReactApp_api>("apiservice")
+                        .WithHttpHealthCheck("/health");
 
 builder.AddViteApp("frontend", "../myreactapp.web")
         .WithReference(apiService)
