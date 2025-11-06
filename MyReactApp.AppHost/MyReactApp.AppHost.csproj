@@ -8,4 +8,8 @@
     <UserSecretsId>376d35eb-d5ee-4e7a-8ea8-7c49680b0447</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0-preview.1.25555.14" />
+  </ItemGroup>
+
 </Project>
