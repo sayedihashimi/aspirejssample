@@ -3,8 +3,10 @@ var builder = DistributedApplication.CreateBuilder(args);
 var apiService = builder.AddProject<Projects.MyReactApp_api>("apiservice")
                         .WithHttpHealthCheck("/health");
 
-builder.AddViteApp("frontend", "../myreactapp.web")
-        .WithReference(apiService)
-        .WaitFor(apiService);
+var frontend = builder.AddViteApp("frontend", "../myreactapp.web")
+                        .WithReference(apiService)
+                        .WaitFor(apiService);
+
+apiService.PublishWithContainerFiles(frontend, "./static");
 
 builder.Build().Run();
