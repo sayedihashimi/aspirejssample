@@ -7,6 +7,6 @@ var frontend = builder.AddViteApp("frontend", "../myreactapp.web")
                         .WithReference(apiService)
                         .WaitFor(apiService);
 
-apiService.PublishWithContainerFiles(frontend, "./static");
+apiService.PublishWithContainerFiles(frontend, "./wwwroot");
 
 builder.Build().Run();
