@@ -1,0 +1,21 @@
+#root {
+    margin: 0 auto;
+    text-align: center;
+    font-size: 1rem;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+#weatherTable{
+  border-collapse: collapse;
+}
+
+#weatherTable tbody tr {
+  border-bottom: 1px solid rgb(68, 68, 68);
+}
+
+#weatherTable th,#weatherTable td {
+    padding: 0.3rem 2rem;
+}
+#weatherTable thead{
+  font-size: 1.2rem;
+}
