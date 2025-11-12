@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download dotnet-install script
+        run: |
+          curl -fsSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+          chmod +x dotnet-install.sh
+
+      - name: Install latest .NET SDK (STS)
+        run: |
+          ./dotnet-install.sh --channel STS --quality ga --install-dir "$DOTNET_INSTALL_DIR"
+          echo "DOTNET_ROOT=$DOTNET_INSTALL_DIR" >> $GITHUB_ENV
+          echo "$DOTNET_INSTALL_DIR:$DOTNET_INSTALL_DIR/tools" >> $GITHUB_PATH
+      - name: Display dotnet version
+        run: dotnet --info
+
+      - name: Install Aspire CLI (native script)
+        run: |
+          curl -sSL https://aspire.dev/install.sh | bash
+          aspire --version
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore solution
+        run: dotnet restore react/MyReactApp.sln
+
+      - name: Build solution (Release)
+        run: dotnet build react/MyReactApp.sln --configuration Release --no-restore
+
+      - name: (Optional) Publish AppHost
+        if: false
+        run: dotnet publish react/MyReactApp.AppHost/MyReactApp.AppHost.csproj -c Release --no-restore
