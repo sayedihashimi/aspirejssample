@@ -29,8 +29,12 @@ jobs:
 
       - name: Install Aspire CLI (native script)
         run: |
-          curl -sSL https://aspire.dev/install.sh | bash
-          aspire --version
+          curl -sSL https://aspire.dev/install.sh -o aspire-install.sh
+          chmod +x aspire-install.sh
+          ./aspire-install.sh
+          echo "$HOME/.aspire/bin" >> $GITHUB_PATH
+          if [ ! -f "$HOME/.aspire/bin/aspire" ]; then echo 'Aspire CLI not found after install'; ls -R "$HOME/.aspire" || true; exit 1; fi
+          "$HOME/.aspire/bin/aspire" --version
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
