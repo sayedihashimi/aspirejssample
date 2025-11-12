@@ -20,10 +20,13 @@ jobs:
       - name: Install latest .NET SDK (STS)
         run: |
           mkdir -p "$RUNNER_TEMP/dotnet"
-          ./dotnet-install.sh --channel STS --quality ga --install-dir "$RUNNER_TEMP/dotnet"
+          # Attempt to install .NET 10 (LTS) SDK; fall back to explicit channel if needed
+          ./dotnet-install.sh --channel 10.0 --quality ga --install-dir "$RUNNER_TEMP/dotnet" || ./dotnet-install.sh --channel LTS --install-dir "$RUNNER_TEMP/dotnet"
           echo "DOTNET_ROOT=$RUNNER_TEMP/dotnet" >> $GITHUB_ENV
           echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/dotnet" >> $GITHUB_ENV
           echo "$RUNNER_TEMP/dotnet:$RUNNER_TEMP/dotnet/tools" >> $GITHUB_PATH
+          "$RUNNER_TEMP/dotnet/dotnet" --version
+          if ! "$RUNNER_TEMP/dotnet/dotnet" --version | grep -q '^10\.'; then echo 'Expected .NET 10 SDK but got:'; "$RUNNER_TEMP/dotnet/dotnet" --version; exit 1; fi
       - name: Display dotnet version
         run: dotnet --info
 
