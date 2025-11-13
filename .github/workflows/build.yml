@@ -75,7 +75,14 @@ jobs:
         run: |
           set -e
           IMAGE_NAME=apiservice
-          IMAGE_TAG=$(docker images --format '{{"{{.Repository}}:{{.Tag}}"}}' | awk -F: -v name="$IMAGE_NAME" '$1==name {print $2; exit}')
+          # Correctly list images with repository:tag
+          IMAGE_TAG=$(docker images --format '{{.Repository}}:{{.Tag}}' | awk -F: -v name="$IMAGE_NAME" '$1==name {print $2; exit}')
+          # Fallback to 'latest' if tag not detected but image exists with latest tag
+          if [ -z "$IMAGE_TAG" ]; then
+            if docker images "$IMAGE_NAME" --format '{{.Tag}}' | grep -q '^latest$'; then
+              IMAGE_TAG=latest
+            fi
+          fi
           if [ -z "$IMAGE_TAG" ]; then
             echo "Could not find local image '$IMAGE_NAME' built by Aspire. Listing images for diagnostics:";
             docker images | head -n50
