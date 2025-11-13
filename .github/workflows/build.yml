@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -52,6 +56,43 @@ jobs:
 
       - name: Build solution (Release)
         run: dotnet build react/MyReactApp.sln --configuration Release --no-restore
+
+      - name: Aspire build (container images)
+        run: |
+          # Build distributed application containers via Aspire CLI
+          "$HOME/.aspire/bin/aspire" do build --verbose || "$HOME/.aspire/bin/aspire" build --verbose || true
+          echo "Listing docker images after Aspire build";
+          docker images | head -n 30
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push apiservice image to GHCR
+        run: |
+          set -e
+          IMAGE_NAME=apiservice
+          IMAGE_TAG=$(docker images --format '{{"{{.Repository}}:{{.Tag}}"}}' | awk -F: -v name="$IMAGE_NAME" '$1==name {print $2; exit}')
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "Could not find local image '$IMAGE_NAME' built by Aspire. Listing images for diagnostics:";
+            docker images | head -n50
+            exit 1
+          fi
+          SOURCE_REF="$IMAGE_NAME:$IMAGE_TAG"
+          TARGET_REPO="ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME"
+          TARGET_REF="$TARGET_REPO:$IMAGE_TAG"
+          echo "Tagging $SOURCE_REF as $TARGET_REF";
+          docker tag "$SOURCE_REF" "$TARGET_REF"
+          docker push "$TARGET_REF"
+          # Also push a 'latest' tag for convenience if not already latest
+          if [ "$IMAGE_TAG" != "latest" ]; then
+            docker tag "$SOURCE_REF" "$TARGET_REPO:latest"
+            docker push "$TARGET_REPO:latest"
+          fi
+          echo "Pushed image(s): $TARGET_REF and (possibly) $TARGET_REPO:latest"
 
       - name: (Optional) Publish AppHost
         if: false
