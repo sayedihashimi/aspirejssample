@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" Version="13.1.0-preview.1.25570.9" />
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0-preview.1.25557.15" />
   </ItemGroup>
 
