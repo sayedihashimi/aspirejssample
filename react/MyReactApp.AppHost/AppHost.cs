@@ -1,7 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Add the following line to configure the Docker Compose environment
-builder.AddDockerComposeEnvironment("env");
+builder.AddDockerComposeEnvironment("env")
+    .WithSshDeploySupport();
 
 var apiService = builder.AddProject<Projects.MyReactApp_api>("apiservice")
                         .WithHttpHealthCheck("/health")
