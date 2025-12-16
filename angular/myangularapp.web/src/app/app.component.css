@@ -1,0 +1,25 @@
+#weatherTable {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 800px;
+}
+
+#weatherTable th,
+#weatherTable td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+#weatherTable th {
+  background-color: #4CAF50;
+  color: white;
+}
+
+#weatherTable tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+#weatherTable tr:hover {
+  background-color: #ddd;
+}

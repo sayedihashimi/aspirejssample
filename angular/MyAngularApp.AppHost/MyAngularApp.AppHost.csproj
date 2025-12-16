@@ -1,0 +1,20 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0-preview.1.25557.15">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>f603eab6-71e1-4971-afc3-b67e07981639</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" Version="13.1.0-preview.1.25570.9" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.0-preview.1.25615.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyAngularApp.api\MyAngularApp.api.csproj" />
+  </ItemGroup>
+
+</Project>
