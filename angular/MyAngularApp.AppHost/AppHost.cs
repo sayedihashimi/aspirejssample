@@ -10,7 +10,9 @@ var apiService = builder.AddProject<Projects.MyAngularApp_api>("apiservice")
 var frontend = builder.AddJavaScriptApp("frontend", "../myangularapp.web", "start")
                         .WithReference(apiService)
                         .WaitFor(apiService)
-                        .WithExternalHttpEndpoints();
+                        .WithHttpEndpoint(env: "PORT")
+                        .WithExternalHttpEndpoints()
+                        .PublishAsDockerFile();
 
 apiService.PublishWithContainerFiles(frontend, "./wwwroot");
 
