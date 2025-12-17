@@ -71,10 +71,10 @@ jobs:
         run: dotnet build ${{ matrix.solution }} --configuration Release --no-restore
 
       - name: Aspire build (container images)
-        working-directory: ${{ matrix.apphost-dir }}
         run: |
           # Build distributed application containers via Aspire CLI
-          "$HOME/.aspire/bin/aspire" do build --verbose || "$HOME/.aspire/bin/aspire" build --verbose || true
+          # Use --project to specify the correct AppHost for this matrix job
+          "$HOME/.aspire/bin/aspire" do build --project "${{ matrix.apphost-dir }}" --verbose || "$HOME/.aspire/bin/aspire" build --project "${{ matrix.apphost-dir }}" --verbose || true
           echo "Listing docker images after Aspire build";
           docker images | head -n 30
 
