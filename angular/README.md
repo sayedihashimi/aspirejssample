@@ -47,7 +47,7 @@ The Angular app will automatically proxy `/api/*` requests to the API service.
 
 - The **AppHost** orchestrates both the API and frontend services
 - Angular runs via `ng serve` with a proxy configuration (`proxy.conf.js`)
-- The proxy reads `APISERVICE_HTTPS` or `APISERVICE_HTTP` environment variables (injected by Aspire) to route `/api/*` requests to the backend
+- The proxy reads `APISERVICEANGULAR_HTTPS` or `APISERVICEANGULAR_HTTP` environment variables (injected by Aspire) to route `/api/*` requests to the backend
 - No hardcoded localhost URLs are used
 
 ### Production/Publish Mode
@@ -67,7 +67,7 @@ When publishing for production:
 ### proxy.conf.js (Dev Proxy)
 
 ```javascript
-const target = process.env.APISERVICE_HTTPS || process.env.APISERVICE_HTTP;
+const target = process.env.APISERVICEANGULAR_HTTPS || process.env.APISERVICEANGULAR_HTTP;
 
 const PROXY_CONFIG = [
   {
@@ -84,11 +84,11 @@ module.exports = PROXY_CONFIG;
 ### AppHost.cs
 
 ```csharp
-var apiService = builder.AddProject<Projects.MyAngularApp_api>("apiservice")
+var apiService = builder.AddProject<Projects.MyAngularApp_api>("apiserviceangular")
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddJavaScriptApp("frontend", "../myangularapp.web", "start")
+var frontend = builder.AddJavaScriptApp("frontendangular", "../myangularapp.web", "start")
                         .WithReference(apiService)
                         .WaitFor(apiService)
                         .WithExternalHttpEndpoints();
