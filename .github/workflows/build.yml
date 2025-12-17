@@ -89,7 +89,12 @@ jobs:
         if: ${{ github.ref == 'refs/heads/publish' }}
         run: |
           set -e
-          IMAGE_NAME=apiservice
+          # Use app-specific image name based on matrix
+          if [ "${{ matrix.app }}" = "angular" ]; then
+            IMAGE_NAME=apiserviceangular
+          else
+            IMAGE_NAME=apiservice
+          fi
           # Correctly list images with repository:tag
           IMAGE_TAG=$(docker images --format '{{.Repository}}:{{.Tag}}' | awk -F: -v name="$IMAGE_NAME" '$1==name {print $2; exit}')
           # Fallback to 'latest' if tag not detected but image exists with latest tag

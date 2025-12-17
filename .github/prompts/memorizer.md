@@ -14,63 +14,93 @@ delete: Delete a memory by ID. Parameter: id.
 
 Editing & Updates:
 
-edit: Edit memory content using find-and-replace (ideal for checking off to-do items, updating sections). Parameters: id, old_text, new_text, replace_all.
+edit: Edit memory content using find-and-replace. Parameters: id, old_text, new_text, replace_all.
 
-updateMetadata: Update memory metadata (title, type, tags, confidence) without changing content.
+updateMetadata: Update memory metadata without changing content.
 
 Relationships & Versioning:
 
-createRelationship: Create a relationship between two memories. Parameters: fromId, toId, type (e.g., 'example-of', 'explains', 'related-to').
+createRelationship: Create a relationship between two memories.
+revertToVersion: Revert a memory to a previous version.
 
-revertToVersion: Revert a memory to a previous version. Parameters: id, versionNumber, changedBy.
-
-All edits and updates are automatically versioned, allowing you to track changes and revert if needed.
+All edits and updates are automatically versioned.
 
 --------------------------------------------------------------------
 MEMORY USAGE POLICY (OVERRIDES DEFAULT BEHAVIOR)
 --------------------------------------------------------------------
 
 Purpose:
-This memory system is used ONLY to store durable technical learnings.
-Do NOT store action logs, step-by-step trails, or routine execution history.
+This memory system stores ONLY durable technical learnings that improve future performance by preventing:
+- Known failures
+- Known omissions
+- Known incomplete changes
 
-Definition of a “Learning”:
-A learning is a stable insight discovered through iteration, typically:
-- An approach that FAILED and why it failed
-- The FIX that worked
-- The CONDITIONS under which it applies
-- The GENERALIZED RULE that can be reused to fast-forward future attempts
+It is NOT a task log.
 
-Store memories ONLY when:
-- An attempted code change, config, or command did NOT work
-- A later change DID work
-- The contrast between failure and success reveals a reusable insight
+--------------------------------------------------------------------
+EXPANDED DEFINITION OF “LEARNING”
+--------------------------------------------------------------------
 
-Do NOT store:
-- Normal command sequences
-- Successful actions with no prior failure
-- One-off debugging noise
-- User instructions or goals
-- Temporary state
+A learning is ANY reusable insight discovered after a mistake, including:
+
+1) Failed attempts that required correction
+2) Incorrect assumptions that were later fixed
+3) **Incomplete changes where required updates were missed**
+4) Systematic omissions that are easy to forget (configs, CI files, manifests)
+5) Multi-file consistency rules discovered after review
+
+A runtime failure is NOT required.
+
+A learning MAY be recorded when:
+- A change “worked” but was incomplete
+- A required file or step was forgotten
+- The omission reveals a checklist or invariant that should always be applied next time
+
+--------------------------------------------------------------------
+EXPLICITLY ALLOWED: OMISSION-BASED LEARNINGS
+--------------------------------------------------------------------
+
+Store a learning when:
+- A refactor or rename missed one or more required files
+- The missing update caused confusion, review comments, or later fixes
+- The fix reveals a **repeatable checklist** or **search pattern**
+
+Examples:
+- Renaming Aspire services requires updating build.yml
+- Changing project names requires updating CI, env vars, and AppHost references
+- Adding a service requires both AppHost registration and pipeline awareness
+
+These ARE learnings, even if no runtime error occurred.
+
+--------------------------------------------------------------------
+DO NOT STORE
+--------------------------------------------------------------------
+
+- Raw action logs
+- Command-by-command execution history
+- Purely successful changes with no mistake
+- User goals or instructions
+- Obvious one-off typos with no broader rule
 
 --------------------------------------------------------------------
 WHEN TO READ FROM MEMORY
 --------------------------------------------------------------------
 
-Before attempting a non-trivial change (code modification, config, infra, tooling):
-1. Call searchMemories with a concise semantic query describing the task.
-2. If a relevant learning exists, APPLY it directly.
-3. Skip known-failed approaches described in memory.
+Before non-trivial work:
+1. searchMemories using the task intent
+2. Apply known checklists or invariants
+3. Proactively update files known to be commonly missed
 
 --------------------------------------------------------------------
 WHEN TO WRITE TO MEMORY
 --------------------------------------------------------------------
 
-After resolving an issue that required iteration:
-1. Summarize the failed attempt(s) briefly.
-2. Clearly document the fix that worked.
-3. Generalize the lesson so it applies beyond this exact instance.
-4. Store ONE memory per learning (not per attempt).
+After discovering:
+- A missed file
+- A forgotten step
+- A required update outside the main code path
+
+Store ONE learning capturing the omission and the invariant it implies.
 
 --------------------------------------------------------------------
 MEMORY FORMAT (REQUIRED)
@@ -80,54 +110,49 @@ type:
 - "learning"
 
 title:
-- Short, outcome-focused
-  Example: "Angular standalone app failed due to missing HttpClient provider"
+- Outcome-focused
+  Example: "Renaming Aspire services requires updating build.yml"
 
 text (markdown):
 - ## Context
-  What was being attempted
+  What change was being made
 
-- ## What Failed
-  Bullet list of approaches that did not work (concise)
+- ## What Was Missed
+  Files, configs, or steps that were not updated initially
 
-- ## What Worked
-  The exact fix or pattern that succeeded
+- ## Impact
+  What problem the omission caused (review issue, CI issue, confusion, etc.)
 
-- ## Why This Works
-  Root cause explanation
+- ## What Fixed It
+  The additional updates required
 
 - ## Reusable Rule
-  A generalized rule to apply next time
+  A checklist-style rule to apply next time
 
 tags:
-- Technology + scenario (e.g., angular, aspire, mcp, memorizer, dependency-injection)
+- aspire, refactor, ci, build-yml, omission
 
 confidence:
-- 0.6–0.9 depending on certainty and repeatability
+- 0.7–0.9
 
 source:
-- "copilot-iteration" or similar
+- "copilot-iteration"
 
 --------------------------------------------------------------------
 RELATIONSHIPS
 --------------------------------------------------------------------
 
 Use createRelationship when:
-- A learning builds on or refines a previous learning
-- One learning supersedes another
-
-Prefer relationship types:
-- "refines"
-- "supersedes"
-- "related-to"
+- One learning adds a missing step to another
+- One learning generalizes a narrower case
 
 --------------------------------------------------------------------
 GOAL
 --------------------------------------------------------------------
 
-Over time, this memory system should function as:
-- A cache of hard-won fixes
-- A way to skip known dead ends
-- A fast-forward mechanism for future Copilot iterations
+This memory system should evolve into:
+- A refactoring checklist engine
+- An omission-prevention system
+- A fast-forward mechanism that avoids “almost correct” changes
 
-If a situation repeats and a learning exists, jump directly to the solution.
+If a task matches a stored learning, proactively apply ALL implied steps.
