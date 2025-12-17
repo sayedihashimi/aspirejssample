@@ -14,7 +14,7 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=build /app/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build /app/dist/myangularapp.web/browser /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # Expose the default nginx port
 EXPOSE 80

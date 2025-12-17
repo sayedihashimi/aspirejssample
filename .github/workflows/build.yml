@@ -83,7 +83,7 @@ jobs:
             API_PROJECT="${{ matrix.app }}/MyReactApp.api/MyReactApp.api.csproj"
             API_IMAGE_NAME="apiservice"
           fi
-          dotnet publish "$API_PROJECT" -c Release /t:PublishContainer -p:ContainerImageName="$API_IMAGE_NAME" -p:ContainerImageTag="$COMMIT_SHA"
+          dotnet publish "$API_PROJECT" -c Release /t:PublishContainer -p:ContainerRepository="$API_IMAGE_NAME" -p:ContainerImageTag="$COMMIT_SHA"
           
           # Build the frontend container using Docker
           echo "Building frontend container..."
