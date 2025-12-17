@@ -12,6 +12,17 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: react
+            solution: react/MyReactApp.sln
+            apphost-dir: react/MyReactApp.AppHost
+          - app: angular
+            solution: angular/MyAngularApp.sln
+            apphost-dir: angular/MyAngularApp.AppHost
+    name: Build ${{ matrix.app }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,6 +42,7 @@ jobs:
           echo "$RUNNER_TEMP/dotnet:$RUNNER_TEMP/dotnet/tools" >> $GITHUB_PATH
           "$RUNNER_TEMP/dotnet/dotnet" --version
           if ! "$RUNNER_TEMP/dotnet/dotnet" --version | grep -q '^10\.'; then echo 'Expected .NET 10 SDK but got:'; "$RUNNER_TEMP/dotnet/dotnet" --version; exit 1; fi
+
       - name: Display dotnet version
         run: dotnet --info
 
@@ -47,20 +59,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          key: nuget-${{ runner.os }}-${{ matrix.app }}-${{ hashFiles(format('{0}/**/packages.lock.json', matrix.app)) }}
           restore-keys: |
+            nuget-${{ runner.os }}-${{ matrix.app }}-
             nuget-${{ runner.os }}-
 
       - name: Restore solution
-        run: dotnet restore react/MyReactApp.sln
+        run: dotnet restore ${{ matrix.solution }}
 
       - name: Build solution (Release)
-        run: dotnet build react/MyReactApp.sln --configuration Release --no-restore
+        run: dotnet build ${{ matrix.solution }} --configuration Release --no-restore
 
       - name: Aspire build (container images)
         run: |
           # Build distributed application containers via Aspire CLI
-          "$HOME/.aspire/bin/aspire" do build --verbose || "$HOME/.aspire/bin/aspire" build --verbose || true
+          # Use --project to specify the correct AppHost for this matrix job
+          "$HOME/.aspire/bin/aspire" do build --project "${{ matrix.apphost-dir }}" --verbose || "$HOME/.aspire/bin/aspire" build --project "${{ matrix.apphost-dir }}" --verbose || true
           echo "Listing docker images after Aspire build";
           docker images | head -n 30
 
@@ -91,7 +105,8 @@ jobs:
             exit 1
           fi
           SOURCE_REF="$IMAGE_NAME:$IMAGE_TAG"
-          TARGET_REPO="ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME"
+          # Include app name in the image path to distinguish between react/angular builds
+          TARGET_REPO="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}-$IMAGE_NAME"
           TARGET_REF="$TARGET_REPO:$IMAGE_TAG"
           echo "Tagging $SOURCE_REF as $TARGET_REF";
           docker tag "$SOURCE_REF" "$TARGET_REF"
