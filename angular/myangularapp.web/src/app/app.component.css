@@ -1,25 +1,24 @@
+/* Host styling to match React's #root */
+:host {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1rem;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
 #weatherTable {
   border-collapse: collapse;
-  width: 100%;
-  max-width: 800px;
+}
+
+#weatherTable tbody tr {
+  border-bottom: 1px solid rgb(68, 68, 68);
 }
 
 #weatherTable th,
 #weatherTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+  padding: 0.3rem 2rem;
 }
 
-#weatherTable th {
-  background-color: #4CAF50;
-  color: white;
-}
-
-#weatherTable tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-#weatherTable tr:hover {
-  background-color: #ddd;
+#weatherTable thead {
+  font-size: 1.2rem;
 }
