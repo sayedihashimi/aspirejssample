@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   
+  // Global CSS
+  css: ['~/assets/css/global.css'],
+  
   // Configure dev server to listen on PORT from Aspire
   devServer: {
     port: parseInt(process.env.PORT || '3000')

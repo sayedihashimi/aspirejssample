@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="weather-container">
     <h1>Weather forecast</h1>
     <p>This component demonstrates fetching data from the server.</p>
     
@@ -49,28 +49,30 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-h1 {
-  margin-bottom: 1rem;
-}
-
-table {
+.weather-container {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1rem;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   width: 100%;
+}
+
+#weatherTable {
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+  display: table;
 }
 
-th, td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+#weatherTable tbody tr {
+  border-bottom: 1px solid rgb(68, 68, 68);
 }
 
-th {
-  background-color: #f5f5f5;
-  font-weight: bold;
+#weatherTable th, #weatherTable td {
+  padding: 0.3rem 2rem;
 }
 
-tr:hover {
-  background-color: #f9f9f9;
+#weatherTable thead {
+  font-size: 1.2rem;
 }
 </style>

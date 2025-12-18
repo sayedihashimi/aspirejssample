@@ -318,6 +318,65 @@ When creating Aspire JavaScript apps that pass PORT as a CLI argument:
 
 ---
 
+## 8. Nuxt apps use #__nuxt root element, not #app, for centering CSS
+
+**Tags:** aspire, nuxt, css, centering, javascript-samples, body-flex
+
+### Context
+Creating a Nuxt.js sample in the Aspire monorepo with the same centered layout as other JavaScript samples (Vue, React, etc.).
+
+### What Was Missed
+1. Nuxt uses `#__nuxt` as its root element, not `#app` like Vite-based apps
+2. Nuxt requires a separate global CSS file referenced in `nuxt.config.ts`
+3. The weather table needs proper centering styles matching other samples
+
+### Impact
+Weather table appeared left-aligned instead of horizontally and vertically centered like other samples.
+
+### What Fixed It
+1. Created `assets/css/global.css` with standard body flex centering and `#__nuxt { width: 100% }`
+2. Added `css: ['~/assets/css/global.css']` to `nuxt.config.ts`
+3. Updated `app.vue` to use `.weather-container` class with centered table styles
+
+```css
+/* In global.css */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#__nuxt {
+  width: 100%;
+}
+```
+
+```css
+/* In app.vue scoped styles */
+.weather-container {
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+
+#weatherTable {
+  margin-left: auto;
+  margin-right: auto;
+}
+```
+
+### Reusable Rule
+When creating Nuxt.js samples with centered layouts:
+1. Use `#__nuxt` instead of `#app` for root element width styling
+2. Create `assets/css/global.css` for body flex centering
+3. Reference CSS in `nuxt.config.ts` with `css: ['~/assets/css/global.css']`
+4. Use `.weather-container` with `text-align: center` and `margin: 0 auto` for content centering
+5. Use `margin-left: auto; margin-right: auto` on tables for horizontal centering
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
