@@ -275,6 +275,49 @@ When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an A
 
 ---
 
+## 7. Next.js Aspire apps need run-script-os for cross-platform PORT handling
+
+**Tags:** aspire, nextjs, javascript, port-configuration, cross-platform, windows, run-script-os
+
+### Context
+Creating an Aspire-hosted Next.js application that needs to run on Windows.
+
+### What Was Missed
+The `package.json` dev script used bash syntax `${PORT:-3000}` which doesn't work on Windows PowerShell. Next.js CLI directly receives the port argument, so cross-platform syntax is required.
+
+### Impact
+Runtime error on Windows:
+```
+error: option '-p, --port <port>' argument '${PORT:-3000}' is invalid. '${PORT:-3000}' is not a non-negative number.
+```
+
+### What Fixed It
+Used `run-script-os` package to provide platform-specific scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "run-script-os",
+    "dev:win32": "next dev -p %PORT%",
+    "dev:default": "next dev -p $PORT"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.1.6"
+  }
+}
+```
+
+### Reusable Rule
+When creating Aspire JavaScript apps that pass PORT as a CLI argument:
+1. Do NOT use bash syntax `${PORT:-default}` - fails on Windows
+2. Use `run-script-os` with platform-specific scripts:
+   - `script:win32` for Windows: uses `%PORT%`
+   - `script:default` for Unix/Mac: uses `$PORT`
+3. This applies to Next.js, Angular, and any framework where PORT is passed as CLI arg
+4. Vite-based apps (React, Vue) handle PORT in config file, so they don't need this
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
@@ -286,6 +329,7 @@ When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an A
 - [ ] Use `PublishAsDockerFile()` in AppHost
 - [ ] Update all files referencing service names/env vars
 - [ ] Verify Docker output paths match framework conventions
+- [ ] Match CSS styling to existing samples (use same table styles, fonts, layout)
 
 ### CI/CD for Aspire projects
 

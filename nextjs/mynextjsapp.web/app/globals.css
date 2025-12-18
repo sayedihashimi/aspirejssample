@@ -22,5 +22,38 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+html {
+  height: 100%;
+}
+
+#root {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1rem;
+  width: 100%;
+}
+
+#weatherTable {
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+
+#weatherTable tbody tr {
+  border-bottom: 1px solid rgb(68, 68, 68);
+}
+
+#weatherTable th, #weatherTable td {
+  padding: 0.3rem 2rem;
+}
+
+#weatherTable thead {
+  font-size: 1.2rem;
 }
