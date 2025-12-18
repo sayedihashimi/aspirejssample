@@ -50,7 +50,7 @@ B) Dev mode behavior
   - the API project
   - the Angular dev server
 - The Angular dev server proxies `/api/*` to the API service using Aspire-injected environment variables:
-  - APISERVICE_HTTPS and/or APISERVICE_HTTP (same pattern as the React sample)
+  - APISERVICEANGULAR_HTTPS and/or APISERVICEANGULAR_HTTP (Angular-specific naming to avoid conflicts)
 - The Angular UI fetches `/api/weatherforecast` and displays a table with columns:
   - Date, Temp (C), Temp (F), Summary
 - No hardcoded API base URL in Angular source; always relative `/api/...`
@@ -102,7 +102,7 @@ WHAT TO IMPLEMENT (MIRROR THE REACT SAMPLE)
   - Loading UI similar to React sample (“Loading... Please refresh once the ASP.NET backend has started.” is fine).
 - Dev proxy:
   - Implement Angular CLI proxy config so `/api` is proxied to:
-    - process.env.APISERVICE_HTTPS || process.env.APISERVICE_HTTP
+    - process.env.APISERVICEANGULAR_HTTPS || process.env.APISERVICEANGULAR_HTTP
   - Angular typically uses `proxy.conf.json`. You may need to generate it dynamically or keep it static and rely on Aspire to inject env vars into the dev server command.
   - Approach: configure the Aspire frontend “run” command to pass the resolved env var into the proxy config (or use a small JS script that writes `proxy.conf.json` at startup). DO THIS ONLY IF NECESSARY; prefer a simple documented approach used by Aspire samples.
   - Do not hardcode localhost ports.
@@ -116,10 +116,10 @@ NAMING / CONSISTENCY
   - Solution name: `MyAngularApp.sln` (or mirror React naming; pick one and be consistent)
   - Projects: `MyAngularApp.AppHost`, `MyAngularApp.api`, `MyAngularApp.ServiceDefaults`
   - Frontend folder: `myangularapp.web`
-- If you choose different names, ensure AppHost service names remain:
-  - API service registered as `"apiservice"`
-  - Frontend registered as `"frontend"`
-  This is important because the env var names are derived from the service name.
+- If you choose different names, ensure AppHost service names remain unique to avoid conflicts:
+  - API service registered as `"apiserviceangular"`
+  - Frontend registered as `"frontendangular"`
+  This is important because the env var names are derived from the service name (e.g., `APISERVICEANGULAR_HTTPS`).
 
 STEP-BY-STEP EXECUTION PLAN (DO THIS)
 1) Inspect current React sample
@@ -158,14 +158,14 @@ STEP-BY-STEP EXECUTION PLAN (DO THIS)
 - In AppHost, add the frontend via the correct Aspire method for Node apps (VERIFY IN ASPIRE DOCS):
   - Configure working directory to the Angular frontend folder.
   - Configure the dev command to run Angular dev server.
-  - Ensure env vars for `APISERVICE_HTTP(S)` are available to the frontend process.
+  - Ensure env vars for `APISERVICEANGULAR_HTTP(S)` are available to the frontend process.
   - WaitFor + WithReference to the API service.
   - External endpoints enabled.
 
 6) Configure Angular proxy to `/api`
 - Ensure `ng serve` uses a proxy config.
 - Proxy target must resolve from env:
-  - APISERVICE_HTTPS or APISERVICE_HTTP
+  - APISERVICEANGULAR_HTTPS or APISERVICEANGULAR_HTTP
 - If Angular proxy config cannot directly read env vars, add a minimal startup script:
   - reads env
   - writes `proxy.conf.json`
