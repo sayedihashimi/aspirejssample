@@ -25,6 +25,9 @@ jobs:
           - app: vue
             solution: vue/MyVueApp.sln
             apphost-dir: vue/MyVueApp.AppHost
+          - app: svelte
+            solution: svelte/MySvelteApp.sln
+            apphost-dir: svelte/MySvelteApp.AppHost
     name: Build ${{ matrix.app }}
     steps:
       - name: Checkout
@@ -85,6 +88,9 @@ jobs:
           elif [ "${{ matrix.app }}" = "vue" ]; then
             API_PROJECT="${{ matrix.app }}/MyVueApp.api/MyVueApp.api.csproj"
             API_IMAGE_NAME="apiservicevue"
+          elif [ "${{ matrix.app }}" = "svelte" ]; then
+            API_PROJECT="${{ matrix.app }}/MySvelteApp.api/MySvelteApp.api.csproj"
+            API_IMAGE_NAME="apiservicesvelte"
           else
             API_PROJECT="${{ matrix.app }}/MyReactApp.api/MyReactApp.api.csproj"
             API_IMAGE_NAME="apiservice"
@@ -99,6 +105,9 @@ jobs:
           elif [ "${{ matrix.app }}" = "vue" ]; then
             FRONTEND_DIR="${{ matrix.app }}/myvueapp.web"
             FRONTEND_IMAGE_NAME="frontendvue"
+          elif [ "${{ matrix.app }}" = "svelte" ]; then
+            FRONTEND_DIR="${{ matrix.app }}/mysvelteapp.web"
+            FRONTEND_IMAGE_NAME="frontendsvelte"
           else
             FRONTEND_DIR="${{ matrix.app }}/myreactapp.web"
             FRONTEND_IMAGE_NAME="frontend"
@@ -129,6 +138,9 @@ jobs:
           elif [ "${{ matrix.app }}" = "vue" ]; then
             API_IMAGE_NAME="apiservicevue"
             FRONTEND_IMAGE_NAME="frontendvue"
+          elif [ "${{ matrix.app }}" = "svelte" ]; then
+            API_IMAGE_NAME="apiservicesvelte"
+            FRONTEND_IMAGE_NAME="frontendsvelte"
           else
             API_IMAGE_NAME="apiservice"
             FRONTEND_IMAGE_NAME="frontend"

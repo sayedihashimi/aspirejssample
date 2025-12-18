@@ -1,0 +1,6 @@
+@MySvelteApp_api_HostAddress = http://localhost:5243
+
+GET {{MySvelteApp_api_HostAddress}}/api/weatherforecast/
+Accept: application/json
+
+###

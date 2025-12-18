@@ -1,0 +1,20 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0-preview.1.25557.15">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>fbc1897a-2969-4f48-be6d-db9e6f3360cc</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" Version="13.1.0-preview.1.25570.9" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.0-preview.1.25615.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MySvelteApp.api\MySvelteApp.api.csproj" />
+  </ItemGroup>
+
+</Project>
