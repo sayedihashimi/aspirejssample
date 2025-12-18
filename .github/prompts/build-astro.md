@@ -155,17 +155,12 @@ Example outline for `src/pages/index.astro` (you may adapt):
     
     <script>
       // Client-side code
-      interface WeatherForecast {
-        date: string;
-        temperatureC: number;
-        temperatureF: number;
-        summary?: string | null;
-      }
+      // WeatherForecast type: { date: string, temperatureC: number, temperatureF: number, summary?: string | null }
 
       async function loadWeather() {
         try {
           const response = await fetch('/api/weatherforecast');
-          const forecasts: WeatherForecast[] = await response.json();
+          const forecasts = await response.json();
           
           const content = document.getElementById('content');
           if (content) {
@@ -235,16 +230,18 @@ STEP-BY-STEP EXECUTION PLAN (DO THIS)
     ```js
     import { defineConfig } from 'astro/config';
     
+    const apiUrl = process.env.APISERVICEASTRO_HTTPS || process.env.APISERVICEASTRO_HTTP;
+    
     export default defineConfig({
       vite: {
         server: {
-          proxy: {
+          proxy: apiUrl ? {
             '/api': {
-              target: process.env.APISERVICEASTRO_HTTPS || process.env.APISERVICEASTRO_HTTP,
+              target: apiUrl,
               changeOrigin: true,
               secure: false,
             }
-          }
+          } : undefined
         }
       }
     });
