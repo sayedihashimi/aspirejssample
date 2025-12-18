@@ -240,6 +240,143 @@ When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
 
 ---
 
+## 6. Aspire JavaScript hosting uses AddJavaScriptApp not AddNpmApp
+
+**Tags:** aspire, javascript, nextjs, hosting, build-failure, apphost
+
+### Context
+Creating an Aspire-hosted Next.js (or other JavaScript/Node.js) application sample.
+
+### What Was Missed
+The AppHost.cs used `AddNpmApp` which does not exist in the `Aspire.Hosting.JavaScript` package.
+
+### Impact
+Build failure with error:
+```
+error CS1061: 'IDistributedApplicationBuilder' does not contain a definition for 'AddNpmApp'
+```
+
+### What Fixed It
+Changed `builder.AddNpmApp(...)` to `builder.AddJavaScriptApp(...)` which is the correct method name in `Aspire.Hosting.JavaScript`.
+
+```csharp
+// Wrong - does not exist
+var frontend = builder.AddNpmApp("frontendnextjs", "../mynextjsapp.web", "dev")
+
+// Correct
+var frontend = builder.AddJavaScriptApp("frontendnextjs", "../mynextjsapp.web", "dev")
+```
+
+### Reusable Rule
+When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an Aspire AppHost:
+1. Use `builder.AddJavaScriptApp("serviceName", "path", "scriptName")`
+2. NOT `AddNpmApp` or `AddViteApp` (these are not valid method names)
+3. The `Aspire.Hosting.JavaScript` package provides `AddJavaScriptApp` as the generic method for any JavaScript framework
+
+---
+
+## 7. Next.js Aspire apps need run-script-os for cross-platform PORT handling
+
+**Tags:** aspire, nextjs, javascript, port-configuration, cross-platform, windows, run-script-os
+
+### Context
+Creating an Aspire-hosted Next.js application that needs to run on Windows.
+
+### What Was Missed
+The `package.json` dev script used bash syntax `${PORT:-3000}` which doesn't work on Windows PowerShell. Next.js CLI directly receives the port argument, so cross-platform syntax is required.
+
+### Impact
+Runtime error on Windows:
+```
+error: option '-p, --port <port>' argument '${PORT:-3000}' is invalid. '${PORT:-3000}' is not a non-negative number.
+```
+
+### What Fixed It
+Used `run-script-os` package to provide platform-specific scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "run-script-os",
+    "dev:win32": "next dev -p %PORT%",
+    "dev:default": "next dev -p $PORT"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.1.6"
+  }
+}
+```
+
+### Reusable Rule
+When creating Aspire JavaScript apps that pass PORT as a CLI argument:
+1. Do NOT use bash syntax `${PORT:-default}` - fails on Windows
+2. Use `run-script-os` with platform-specific scripts:
+   - `script:win32` for Windows: uses `%PORT%`
+   - `script:default` for Unix/Mac: uses `$PORT`
+3. This applies to Next.js, Angular, and any framework where PORT is passed as CLI arg
+4. Vite-based apps (React, Vue) handle PORT in config file, so they don't need this
+
+---
+
+## 8. Nuxt apps use #__nuxt root element, not #app, for centering CSS
+
+**Tags:** aspire, nuxt, css, centering, javascript-samples, body-flex
+
+### Context
+Creating a Nuxt.js sample in the Aspire monorepo with the same centered layout as other JavaScript samples (Vue, React, etc.).
+
+### What Was Missed
+1. Nuxt uses `#__nuxt` as its root element, not `#app` like Vite-based apps
+2. Nuxt requires a separate global CSS file referenced in `nuxt.config.ts`
+3. The weather table needs proper centering styles matching other samples
+
+### Impact
+Weather table appeared left-aligned instead of horizontally and vertically centered like other samples.
+
+### What Fixed It
+1. Created `assets/css/global.css` with standard body flex centering and `#__nuxt { width: 100% }`
+2. Added `css: ['~/assets/css/global.css']` to `nuxt.config.ts`
+3. Updated `app.vue` to use `.weather-container` class with centered table styles
+
+```css
+/* In global.css */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#__nuxt {
+  width: 100%;
+}
+```
+
+```css
+/* In app.vue scoped styles */
+.weather-container {
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+
+#weatherTable {
+  margin-left: auto;
+  margin-right: auto;
+}
+```
+
+### Reusable Rule
+When creating Nuxt.js samples with centered layouts:
+1. Use `#__nuxt` instead of `#app` for root element width styling
+2. Create `assets/css/global.css` for body flex centering
+3. Reference CSS in `nuxt.config.ts` with `css: ['~/assets/css/global.css']`
+4. Use `.weather-container` with `text-align: center` and `margin: 0 auto` for content centering
+5. Use `margin-left: auto; margin-right: auto` on tables for horizontal centering
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
@@ -251,6 +388,7 @@ When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
 - [ ] Use `PublishAsDockerFile()` in AppHost
 - [ ] Update all files referencing service names/env vars
 - [ ] Verify Docker output paths match framework conventions
+- [ ] Match CSS styling to existing samples (use same table styles, fonts, layout)
 
 ### CI/CD for Aspire projects
 

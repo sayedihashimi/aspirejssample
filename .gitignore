@@ -5,6 +5,9 @@
 .angular/
 aspire-output/
 .vite/
+# Next.js
+.next/
+out/
 # User-specific files
 *.rsuser
 *.suo
