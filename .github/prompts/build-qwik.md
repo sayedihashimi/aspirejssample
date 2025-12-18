@@ -283,7 +283,7 @@ DELIVERABLES
   - how proxy works (env vars from Aspire; include the exact env var names)
   - how publish serves frontend from API wwwroot
 - Commit messages include the commands used.
-- CSS styling MUST match the other apps exactly (React, Angular, Svelte).
+- CSS styling MUST match the other apps exactly (React, Angular, Svelte, SolidJS, Vue).
 
 DO NOT
 - Do not change `react/` or other samples unless required to keep CI green.
