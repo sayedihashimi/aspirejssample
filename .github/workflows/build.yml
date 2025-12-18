@@ -31,6 +31,15 @@ jobs:
           - app: solid
             solution: solid/MySolidApp.sln
             apphost-dir: solid/MySolidApp.AppHost
+          - app: astro
+            solution: astro/MyAstroApp.sln
+            apphost-dir: astro/MyAstroApp.AppHost
+          - app: nextjs
+            solution: nextjs/MyNextJsApp.sln
+            apphost-dir: nextjs/MyNextJsApp.AppHost
+          - app: nuxtjs
+            solution: nuxtjs/MyNuxtApp.sln
+            apphost-dir: nuxtjs/MyNuxtApp.AppHost
     name: Build ${{ matrix.app }}
     steps:
       - name: Checkout
@@ -97,6 +106,15 @@ jobs:
           elif [ "${{ matrix.app }}" = "solid" ]; then
             API_PROJECT="${{ matrix.app }}/MySolidApp.api/MySolidApp.api.csproj"
             API_IMAGE_NAME="apiservicesolid"
+          elif [ "${{ matrix.app }}" = "astro" ]; then
+            API_PROJECT="${{ matrix.app }}/MyAstroApp.api/MyAstroApp.api.csproj"
+            API_IMAGE_NAME="apiserviceastro"
+          elif [ "${{ matrix.app }}" = "nextjs" ]; then
+            API_PROJECT="${{ matrix.app }}/MyNextJsApp.api/MyNextJsApp.api.csproj"
+            API_IMAGE_NAME="apiservicenextjs"
+          elif [ "${{ matrix.app }}" = "nuxtjs" ]; then
+            API_PROJECT="${{ matrix.app }}/MyNuxtApp.api/MyNuxtApp.api.csproj"
+            API_IMAGE_NAME="apiservicenuxtjs"
           else
             API_PROJECT="${{ matrix.app }}/MyReactApp.api/MyReactApp.api.csproj"
             API_IMAGE_NAME="apiservice"
@@ -117,6 +135,15 @@ jobs:
           elif [ "${{ matrix.app }}" = "solid" ]; then
             FRONTEND_DIR="${{ matrix.app }}/mysolidapp.web"
             FRONTEND_IMAGE_NAME="frontendsolid"
+          elif [ "${{ matrix.app }}" = "astro" ]; then
+            FRONTEND_DIR="${{ matrix.app }}/myastroapp.web"
+            FRONTEND_IMAGE_NAME="frontendastro"
+          elif [ "${{ matrix.app }}" = "nextjs" ]; then
+            FRONTEND_DIR="${{ matrix.app }}/mynextjsapp.web"
+            FRONTEND_IMAGE_NAME="frontendnextjs"
+          elif [ "${{ matrix.app }}" = "nuxtjs" ]; then
+            FRONTEND_DIR="${{ matrix.app }}/mynuxtapp.web"
+            FRONTEND_IMAGE_NAME="frontendnuxtjs"
           else
             FRONTEND_DIR="${{ matrix.app }}/myreactapp.web"
             FRONTEND_IMAGE_NAME="frontend"
@@ -153,6 +180,15 @@ jobs:
           elif [ "${{ matrix.app }}" = "solid" ]; then
             API_IMAGE_NAME="apiservicesolid"
             FRONTEND_IMAGE_NAME="frontendsolid"
+          elif [ "${{ matrix.app }}" = "astro" ]; then
+            API_IMAGE_NAME="apiserviceastro"
+            FRONTEND_IMAGE_NAME="frontendastro"
+          elif [ "${{ matrix.app }}" = "nextjs" ]; then
+            API_IMAGE_NAME="apiservicenextjs"
+            FRONTEND_IMAGE_NAME="frontendnextjs"
+          elif [ "${{ matrix.app }}" = "nuxtjs" ]; then
+            API_IMAGE_NAME="apiservicenuxtjs"
+            FRONTEND_IMAGE_NAME="frontendnuxtjs"
           else
             API_IMAGE_NAME="apiservice"
             FRONTEND_IMAGE_NAME="frontend"
