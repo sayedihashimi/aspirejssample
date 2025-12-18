@@ -139,8 +139,8 @@ RECOMMENDED NUXT.JS IMPLEMENTATION DETAILS (KEEP IT SIMPLE)
   - Ensure output is static HTML/JS/CSS files suitable for serving from `wwwroot`
 
 Example outline for page component (you may adapt):
-- types: `interface WeatherForecast { date: string; temperatureC: number; temperatureF: number; summary?: string | null }`
-- state: `const forecasts = ref<WeatherForecast[]>([]); const loading = ref(true);`
+- types: `// WeatherForecast type: { date: string, temperatureC: number, temperatureF: number, summary?: string | null }`
+- state: `const forecasts = ref([]); const loading = ref(true);`
 - `onMounted(async () => { const data = await $fetch('/api/weatherforecast'); forecasts.value = data; loading.value = false; })`
 - render:
   - `<h1>Weather forecast</h1>`
