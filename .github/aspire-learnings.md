@@ -492,6 +492,56 @@ When programmatically extracting URLs from Aspire CLI output:
 
 ---
 
+## 11. Aspire AppHost launchSettings.json files must have unique ports to avoid dashboard collisions
+
+**Tags:** aspire, launchSettings, port-configuration, copy-paste, omission, dashboard
+
+### Context
+Running multiple Aspire apps concurrently and noticing that several apps displayed the same dashboard URL/port.
+
+### What Was Missed
+When copying Aspire samples from templates or other projects, the `launchSettings.json` files in the `AppHost/Properties` folder contained hardcoded duplicate ports. Multiple projects had the same port 17159:
+```
+astro      : https://localhost:17159/...
+nextjs     : https://localhost:17159/...
+react      : https://localhost:17159/...
+solid      : https://localhost:17159/...
+```
+
+The ports in `launchSettings.json` are used by `aspire run` for the dashboard URL when running via CLI.
+
+### Impact
+- Multiple apps showed the same dashboard URL
+- Only one app's dashboard was actually accessible
+- Initially appeared to be a timing issue but was actually a configuration problem
+
+### What Fixed It
+Assigned unique ports to each AppHost's `launchSettings.json`:
+
+| Project | HTTPS Port | HTTP Port |
+|---------|------------|-----------|
+| Angular | 17073 | 15151 |
+| Astro | 17081 | 15031 |
+| NextJS | 17089 | 15039 |
+| NuxtJS | 17000 | 15000 |
+| React | 17097 | 15047 |
+| Solid | 17105 | 15055 |
+| Svelte | 17122 | 15102 |
+| Vue | 17244 | 15045 |
+
+### Reusable Rule
+When creating new Aspire samples by copying from templates:
+1. ALWAYS update `AppHost/Properties/launchSettings.json` with unique ports
+2. The `applicationUrl` field format is `https://localhost:PORT1;http://localhost:PORT2`
+3. Also update the OTLP, MCP, and Resource Service endpoint ports if present
+4. Use a consistent port range scheme (e.g., 17xxx for HTTPS, 15xxx for HTTP)
+5. Search for duplicate ports before running multiple apps:
+   ```powershell
+   Get-ChildItem -Recurse -Filter "launchSettings.json" | Select-String "17159"
+   ```
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire

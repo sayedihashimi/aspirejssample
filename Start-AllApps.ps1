@@ -108,7 +108,7 @@ try {
             ErrorFile = $errorFile
         }
         
-        # Small delay between starts to avoid port conflicts
+        # Small delay between starts
         Start-Sleep -Milliseconds 500
     }
     
