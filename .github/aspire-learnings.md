@@ -240,6 +240,41 @@ When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
 
 ---
 
+## 6. Aspire JavaScript hosting uses AddJavaScriptApp not AddNpmApp
+
+**Tags:** aspire, javascript, nextjs, hosting, build-failure, apphost
+
+### Context
+Creating an Aspire-hosted Next.js (or other JavaScript/Node.js) application sample.
+
+### What Was Missed
+The AppHost.cs used `AddNpmApp` which does not exist in the `Aspire.Hosting.JavaScript` package.
+
+### Impact
+Build failure with error:
+```
+error CS1061: 'IDistributedApplicationBuilder' does not contain a definition for 'AddNpmApp'
+```
+
+### What Fixed It
+Changed `builder.AddNpmApp(...)` to `builder.AddJavaScriptApp(...)` which is the correct method name in `Aspire.Hosting.JavaScript`.
+
+```csharp
+// Wrong - does not exist
+var frontend = builder.AddNpmApp("frontendnextjs", "../mynextjsapp.web", "dev")
+
+// Correct
+var frontend = builder.AddJavaScriptApp("frontendnextjs", "../mynextjsapp.web", "dev")
+```
+
+### Reusable Rule
+When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an Aspire AppHost:
+1. Use `builder.AddJavaScriptApp("serviceName", "path", "scriptName")`
+2. NOT `AddNpmApp` or `AddViteApp` (these are not valid method names)
+3. The `Aspire.Hosting.JavaScript` package provides `AddJavaScriptApp` as the generic method for any JavaScript framework
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire

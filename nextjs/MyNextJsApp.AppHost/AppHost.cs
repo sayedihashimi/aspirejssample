@@ -7,7 +7,7 @@ var apiService = builder.AddProject<Projects.MyNextJsApp_api>("apiservicenextjs"
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddNpmApp("frontendnextjs", "../mynextjsapp.web", "dev")
+var frontend = builder.AddJavaScriptApp("frontendnextjs", "../mynextjsapp.web", "dev")
                         .WithReference(apiService)
                         .WaitFor(apiService)
                         .WithHttpEndpoint(env: "PORT")
