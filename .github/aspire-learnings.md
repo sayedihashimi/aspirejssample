@@ -377,6 +377,53 @@ When creating Nuxt.js samples with centered layouts:
 
 ---
 
+## 9. Astro apps need run-script-os for PORT and inline centering CSS
+
+**Tags:** aspire, astro, javascript, port-configuration, cross-platform, windows, run-script-os, css, centering
+
+### Context
+Creating an Aspire-hosted Astro application that needs to run on Windows and match the centered layout of other JavaScript samples.
+
+### What Was Missed
+1. The Astro dev command accepts `--port` as a CLI argument, requiring cross-platform handling
+2. Setting `port` in `vite.server` config inside `astro.config.mjs` does NOT work - Astro uses its own dev server, not Vite's
+3. The weather table CSS styling was not centered (used basic left-aligned table styles)
+
+### Impact
+- The URL shown in the Aspire dashboard for the frontend didn't work (Astro listened on default port 4321)
+- Weather table was left-aligned instead of horizontally and vertically centered like other samples
+
+### What Fixed It
+1. Used `run-script-os` package for cross-platform PORT handling in `package.json`:
+   ```json
+   {
+     "scripts": {
+       "dev": "run-script-os",
+       "dev:win32": "astro dev --port %PORT%",
+       "dev:default": "astro dev --port $PORT"
+     },
+     "devDependencies": {
+       "run-script-os": "^1.1.6"
+     }
+   }
+   ```
+
+2. Updated `index.astro` with proper centering CSS (inline since Astro pages are self-contained):
+   - Body flexbox: `display: flex; place-items: center; min-height: 100vh;`
+   - Container wrapper: `.weather-container { margin: 0 auto; text-align: center; width: 100%; }`
+   - Table centering: `#weatherTable { margin-left: auto; margin-right: auto; }`
+
+3. Removed the `vite.server.port` config from `astro.config.mjs` (it doesn't affect the dev server)
+
+### Reusable Rule
+When creating Astro samples in Aspire:
+1. Use `run-script-os` with `--port %PORT%` (Windows) and `--port $PORT` (Unix) - same pattern as Angular/Next.js
+2. Do NOT configure port in `astro.config.mjs` under `vite.server` - Astro ignores it for dev server
+3. Add centering CSS inline in the Astro page (body flex, container wrapper, table margins)
+4. Match styling to other samples (dark/light mode, fonts, table styles)
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
