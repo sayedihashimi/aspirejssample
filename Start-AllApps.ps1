@@ -228,10 +228,11 @@ try {
     if ($runningApps.Count -gt 0) {
         Write-Host "`n========================================" -ForegroundColor Cyan
         Write-Host "  $($runningApps.Count) app(s) running" -ForegroundColor Green
+        Write-Host "  Press CTRL+O to open all dashboards" -ForegroundColor Magenta
         Write-Host "  Press CTRL+C to stop all apps" -ForegroundColor Yellow
         Write-Host "========================================`n" -ForegroundColor Cyan
         
-        # Keep script running until CTRL+C
+        # Keep script running until CTRL+C, listen for CTRL+O to open dashboards
         while ($true) {
             # Check if any process has exited
             $stillRunning = $false
@@ -247,7 +248,22 @@ try {
                 break
             }
             
-            Start-Sleep -Seconds 1
+            # Check for keyboard input (CTRL+O)
+            if ([Console]::KeyAvailable) {
+                $key = [Console]::ReadKey($true)
+                if ($key.Modifiers -band [ConsoleModifiers]::Control -and $key.Key -eq [ConsoleKey]::O) {
+                    Write-Host "`nOpening all dashboards..." -ForegroundColor Magenta
+                    foreach ($appName in $runningApps) {
+                        if ($foundUrls.ContainsKey($appName) -and $foundUrls[$appName]) {
+                            Start-Process $foundUrls[$appName]
+                            Write-Host "  Opened $appName dashboard" -ForegroundColor Green
+                        }
+                    }
+                    Write-Host ""
+                }
+            }
+            
+            Start-Sleep -Milliseconds 100
         }
     }
     

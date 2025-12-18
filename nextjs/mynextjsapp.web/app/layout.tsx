@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Weather Forecast - Next.js with Aspire",
   description: "A Next.js sample integrated with .NET Aspire",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
