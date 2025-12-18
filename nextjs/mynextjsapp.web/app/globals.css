@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+html {
+  height: 100%;
+}
+
+#root {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1rem;
+  width: 100%;
+}
+
+#weatherTable {
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+
+#weatherTable tbody tr {
+  border-bottom: 1px solid rgb(68, 68, 68);
+}
+
+#weatherTable th, #weatherTable td {
+  padding: 0.3rem 2rem;
+}
+
+#weatherTable thead {
+  font-size: 1.2rem;
+}

@@ -240,6 +240,84 @@ When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
 
 ---
 
+## 6. Aspire JavaScript hosting uses AddJavaScriptApp not AddNpmApp
+
+**Tags:** aspire, javascript, nextjs, hosting, build-failure, apphost
+
+### Context
+Creating an Aspire-hosted Next.js (or other JavaScript/Node.js) application sample.
+
+### What Was Missed
+The AppHost.cs used `AddNpmApp` which does not exist in the `Aspire.Hosting.JavaScript` package.
+
+### Impact
+Build failure with error:
+```
+error CS1061: 'IDistributedApplicationBuilder' does not contain a definition for 'AddNpmApp'
+```
+
+### What Fixed It
+Changed `builder.AddNpmApp(...)` to `builder.AddJavaScriptApp(...)` which is the correct method name in `Aspire.Hosting.JavaScript`.
+
+```csharp
+// Wrong - does not exist
+var frontend = builder.AddNpmApp("frontendnextjs", "../mynextjsapp.web", "dev")
+
+// Correct
+var frontend = builder.AddJavaScriptApp("frontendnextjs", "../mynextjsapp.web", "dev")
+```
+
+### Reusable Rule
+When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an Aspire AppHost:
+1. Use `builder.AddJavaScriptApp("serviceName", "path", "scriptName")`
+2. NOT `AddNpmApp` or `AddViteApp` (these are not valid method names)
+3. The `Aspire.Hosting.JavaScript` package provides `AddJavaScriptApp` as the generic method for any JavaScript framework
+
+---
+
+## 7. Next.js Aspire apps need run-script-os for cross-platform PORT handling
+
+**Tags:** aspire, nextjs, javascript, port-configuration, cross-platform, windows, run-script-os
+
+### Context
+Creating an Aspire-hosted Next.js application that needs to run on Windows.
+
+### What Was Missed
+The `package.json` dev script used bash syntax `${PORT:-3000}` which doesn't work on Windows PowerShell. Next.js CLI directly receives the port argument, so cross-platform syntax is required.
+
+### Impact
+Runtime error on Windows:
+```
+error: option '-p, --port <port>' argument '${PORT:-3000}' is invalid. '${PORT:-3000}' is not a non-negative number.
+```
+
+### What Fixed It
+Used `run-script-os` package to provide platform-specific scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "run-script-os",
+    "dev:win32": "next dev -p %PORT%",
+    "dev:default": "next dev -p $PORT"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.1.6"
+  }
+}
+```
+
+### Reusable Rule
+When creating Aspire JavaScript apps that pass PORT as a CLI argument:
+1. Do NOT use bash syntax `${PORT:-default}` - fails on Windows
+2. Use `run-script-os` with platform-specific scripts:
+   - `script:win32` for Windows: uses `%PORT%`
+   - `script:default` for Unix/Mac: uses `$PORT`
+3. This applies to Next.js, Angular, and any framework where PORT is passed as CLI arg
+4. Vite-based apps (React, Vue) handle PORT in config file, so they don't need this
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
@@ -251,6 +329,7 @@ When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
 - [ ] Use `PublishAsDockerFile()` in AppHost
 - [ ] Update all files referencing service names/env vars
 - [ ] Verify Docker output paths match framework conventions
+- [ ] Match CSS styling to existing samples (use same table styles, fonts, layout)
 
 ### CI/CD for Aspire projects
 
