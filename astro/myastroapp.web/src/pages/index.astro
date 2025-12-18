@@ -1,0 +1,145 @@
+---
+// Server-side code (runs at build time)
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Weather Forecast</title>
+    <style>
+      :root {
+        font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+        line-height: 1.5;
+        font-weight: 400;
+
+        color-scheme: light dark;
+        color: rgba(255, 255, 255, 0.87);
+        background-color: #242424;
+
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      a {
+        font-weight: 500;
+        color: #646cff;
+        text-decoration: inherit;
+      }
+      a:hover {
+        color: #535bf2;
+      }
+
+      body {
+        margin: 0;
+        display: flex;
+        place-items: center;
+        min-width: 320px;
+        min-height: 100vh;
+      }
+
+      .weather-container {
+        margin: 0 auto;
+        text-align: center;
+        font-size: 1rem;
+        width: 100%;
+      }
+
+      #content {
+        display: flex;
+        justify-content: center;
+      }
+
+      h1 {
+        font-size: 3.2em;
+        line-height: 1.1;
+      }
+
+      #weatherTable {
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      #weatherTable tbody tr {
+        border-bottom: 1px solid rgb(68, 68, 68);
+      }
+
+      #weatherTable th, #weatherTable td {
+        padding: 0.3rem 2rem;
+      }
+
+      #weatherTable thead {
+        font-size: 1.2rem;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          color: #213547;
+          background-color: #ffffff;
+        }
+        a:hover {
+          color: #747bff;
+        }
+        #weatherTable tbody tr {
+          border-bottom: 1px solid #ddd;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="weather-container">
+      <h1>Weather forecast</h1>
+      <p>This component demonstrates fetching data from the server.</p>
+      <div id="content">Loading... Please refresh once the ASP.NET backend has started.</div>
+    </div>
+    
+    <script>
+      // Client-side code
+      // WeatherForecast type: { date: string, temperatureC: number, temperatureF: number, summary?: string | null }
+
+      async function loadWeather() {
+        try {
+          const response = await fetch('/api/weatherforecast');
+          const forecasts = await response.json();
+          
+          const content = document.getElementById('content');
+          if (content) {
+            content.innerHTML = `
+              <table id="weatherTable">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Temp. (C)</th>
+                    <th>Temp. (F)</th>
+                    <th>Summary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${forecasts.map(f => `
+                    <tr>
+                      <td>${new Date(f.date).toLocaleDateString()}</td>
+                      <td>${f.temperatureC}</td>
+                      <td>${f.temperatureF}</td>
+                      <td>${f.summary || ''}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `;
+          }
+        } catch (error) {
+          console.error('Failed to load weather data:', error);
+          const content = document.getElementById('content');
+          if (content) {
+            content.innerHTML = '<p>Error loading weather data. Please ensure the API backend is running.</p>';
+          }
+        }
+      }
+
+      loadWeather();
+    </script>
+  </body>
+</html>

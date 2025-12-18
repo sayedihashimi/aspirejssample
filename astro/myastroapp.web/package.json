@@ -1,0 +1,20 @@
+{
+  "name": "myastroapp.web",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "run-script-os",
+    "dev:win32": "astro dev --port %PORT%",
+    "dev:default": "astro dev --port $PORT",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "astro": "^5.16.6",
+    "run-script-os": "^1.1.6"
+  }
+}
