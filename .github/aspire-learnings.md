@@ -1,0 +1,260 @@
+# Aspire Learnings
+
+This document contains accumulated learnings from working with .NET Aspire projects, particularly with JavaScript frontends.
+
+---
+
+## 1. Aspire CLI does not have a 'build' command - use dotnet publish and docker build for container images
+
+**Tags:** aspire, ci, build-yml, docker, container, github-actions, dotnet-publish, aspire-cli
+
+### Context
+CI pipeline was using `aspire build` or `aspire do build` commands to build Docker container images for an Aspire-based application with JavaScript frontends.
+
+### What Was Missed
+The Aspire CLI does not have a `build` command. The available commands are:
+- `new` - Create a new Aspire project
+- `init` - Initialize Aspire support
+- `run` - Run in development mode
+- `add` - Add hosting integrations
+- `publish` - Generate deployment artifacts (Preview)
+- `deploy` - Deploy to targets (Preview)
+- `do` - Execute pipeline steps (Preview)
+
+The `aspire publish` command generates manifests and docker-compose files but does NOT build Docker images.
+
+### Impact
+CI pipeline failed with:
+```
+Unrecognized command or argument 'build'.
+```
+
+### What Fixed It
+Replace `aspire build` with the proper image building approach:
+
+1. **For .NET API projects**: Use `dotnet publish` with container support:
+   ```bash
+   dotnet publish "path/to/Project.csproj" -c Release /t:PublishContainer -p:ContainerImageName="imagename" -p:ContainerImageTag="$COMMIT_SHA"
+   ```
+
+2. **For JavaScript apps with `PublishAsDockerFile()`**: Build Docker images directly:
+   ```bash
+   docker build -t "imagename:$COMMIT_SHA" "path/to/frontend"
+   ```
+
+### Reusable Rule
+When building container images in CI for Aspire applications:
+1. Do NOT use `aspire build` - it doesn't exist
+2. Use `dotnet publish /t:PublishContainer` for .NET projects
+3. Use `docker build` for JavaScript/Node apps with Dockerfiles
+4. The `aspire publish` command generates deployment manifests, not container images
+5. Check the AppHost.cs for `PublishAsDockerFile()` calls to identify which services need Docker builds
+
+---
+
+## 2. Aspire monorepo samples require unique service names to avoid env var collisions
+
+**Tags:** aspire, monorepo, service-names, environment-variables, vue, angular, react, omission
+
+### Context
+In a monorepo with multiple Aspire samples (React, Angular, Vue), each sample needs unique service names to avoid conflicts. Service names like `apiservice` and `frontend` generate environment variables (e.g., `APISERVICE_HTTPS`) that would collide across samples.
+
+### What Was Missed
+1. Initial Vue sample used generic names `apiservice` and `frontend` instead of `apiservicevue` and `frontendvue`
+2. The instruction files (`.github/prompts/build-vue-app.md`, `build-angular-app.md`) incorrectly specified using generic names
+3. All files referencing the environment variables needed updating
+
+### Impact
+- Environment variable name collisions in monorepo
+- Confusion about which service belongs to which sample
+- CI workflow already expected unique names but AppHost used generic ones
+
+### What Fixed It
+Updated all files that reference service names:
+1. `AppHost.cs` - service registration names
+2. `vite.config.js` / `proxy.conf.js` - environment variable references (`APISERVICEVUE_HTTPS`, etc.)
+3. `default.conf.template` - nginx proxy environment variables
+4. `README.md` - documentation examples
+5. `.github/prompts/*.md` - instruction files
+6. `.github/workflows/build.yml` - Docker image names (was already correct)
+
+### Reusable Rule
+When creating a new Aspire sample in a monorepo:
+1. Use unique service names with sample suffix: `apiservice<sample>`, `frontend<sample>` (e.g., `apiservicevue`, `frontendvue`)
+2. Update ALL files that reference environment variables derived from service names:
+   - Proxy configs (vite.config.js, proxy.conf.js)
+   - Nginx configs (default.conf.template)  
+   - README documentation
+   - CI workflow (build.yml)
+   - Instruction files (.github/prompts/*.md)
+3. Environment variable format: `<SERVICENAME>_HTTPS`, `<SERVICENAME>_HTTP` (uppercase with underscores)
+
+**Search pattern:**
+```bash
+grep -rE "APISERVICE|apiservice|frontend" --include="*.cs" --include="*.js" --include="*.yaml" --include="*.yml" --include="*.template" --include="*.md" <sample-folder>/
+```
+
+---
+
+## 3. JavaScript frontends in Aspire need Dockerfile, nginx config, and PublishAsDockerFile() for CI container builds
+
+**Tags:** aspire, react, vite, dockerfile, ci, omission, docker, apphost, javascript
+
+### Context
+Setting up CI to build container images for an Aspire solution with both Angular and React JavaScript frontends.
+
+### What Was Missed
+The React frontend was missing Docker containerization support:
+1. No `Dockerfile` in the React project directory
+2. No `default.conf.template` for nginx configuration
+3. AppHost used `AddViteApp()` instead of `AddJavaScriptApp().PublishAsDockerFile()`
+
+The Angular app had all these files, but React was configured differently.
+
+### Impact
+CI failed with:
+```
+ERROR: failed to build: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+```
+
+### What Fixed It
+1. Created `Dockerfile` for React/Vite app:
+   ```dockerfile
+   FROM node:20 AS build
+   WORKDIR /app
+   COPY package.json package-lock.json ./
+   RUN npm install
+   COPY . .
+   RUN npm run build
+   
+   FROM nginx:alpine
+   COPY --from=build /app/default.conf.template /etc/nginx/templates/default.conf.template
+   COPY --from=build /app/dist /usr/share/nginx/html
+   EXPOSE 80
+   CMD ["nginx", "-g", "daemon off;"]
+   ```
+   Note: Vite outputs to `dist/` (not `dist/projectname/browser` like Angular)
+
+2. Created `default.conf.template` for nginx with correct API service name
+
+3. Updated `AppHost.cs` to use `AddJavaScriptApp()` with `PublishAsDockerFile()`:
+   ```csharp
+   var frontend = builder.AddJavaScriptApp("frontend", "../myreactapp.web", "dev")
+       .WithReference(apiService)
+       .WaitFor(apiService)
+       .WithHttpEndpoint(env: "PORT")
+       .WithExternalHttpEndpoints()
+       .PublishAsDockerFile();
+   ```
+
+### Reusable Rule
+When adding Docker/CI support for JavaScript frontends in Aspire:
+1. Each frontend needs a `Dockerfile`
+2. Each frontend needs a `default.conf.template` for nginx
+3. AppHost must use `PublishAsDockerFile()` for container builds
+4. Build output paths differ by framework:
+   - Vite/React: `dist/`
+   - Angular 17+: `dist/<projectname>/browser`
+5. The nginx template must reference the correct API service name (matches AppHost registration)
+
+---
+
+## 4. Angular Dockerfile must match project outputPath from angular.json
+
+**Tags:** angular, dockerfile, build-output, refactor, omission, ci, docker
+
+### Context
+Renaming or creating an Angular project in an Aspire solution where the Dockerfile was copied from a template or another project.
+
+### What Was Missed
+The Dockerfile contained a hardcoded path to the Angular build output that didn't match the actual project name:
+- Dockerfile had: `COPY --from=build /app/dist/weather/browser /usr/share/nginx/html`
+- Angular project outputs to: `dist/myangularapp.web/browser` (based on `outputPath` in `angular.json`)
+
+### Impact
+Docker build failed with:
+```
+"/app/dist/weather/browser": not found
+```
+
+### What Fixed It
+Updated the Dockerfile to use the correct output path matching the Angular project's `outputPath` in `angular.json`:
+```dockerfile
+COPY --from=build /app/dist/myangularapp.web/browser /usr/share/nginx/html
+```
+
+### Reusable Rule
+When creating or renaming an Angular project with Docker support:
+1. Check `angular.json` for the `outputPath` setting (e.g., `dist/projectname`)
+2. Update Dockerfile `COPY` commands to match the actual output path
+3. For Angular 17+, the browser build output is in `dist/<projectname>/browser`
+
+**Search pattern to verify consistency:**
+```bash
+# Find output path in angular.json
+grep -r "outputPath" angular.json
+
+# Find COPY commands in Dockerfile referencing dist
+grep "dist/" Dockerfile
+```
+
+---
+
+## 5. Aspire JavaScript apps must configure dev server to use PORT env var
+
+**Tags:** aspire, javascript, vite, vue, react, angular, port-configuration, omission
+
+### Context
+When creating a JavaScript frontend app (Vue, React, Angular) with .NET Aspire, the AppHost uses `.WithHttpEndpoint(env: "PORT")` to tell Aspire to assign a port and set it in the PORT environment variable for the frontend dev server.
+
+### What Was Missed
+The Vue sample was created with `vite.config.js` that didn't configure Vite to listen on the PORT environment variable. The Aspire dashboard URL for the frontend didn't work because Vite was listening on its default port (5173) instead of the Aspire-assigned port.
+
+### Impact
+- The URL shown in the Aspire dashboard for the frontend doesn't work
+- Users can only access the frontend via localhost URL in the console
+- Same issue occurred with Angular implementation before being fixed
+
+### What Fixed It
+For Vite-based apps (Vue, React), add `port: parseInt(process.env.PORT) || 5173` to the server config in `vite.config.js`:
+
+```javascript
+server: {
+  port: parseInt(process.env.PORT) || 5173,
+  proxy: {
+    // ...
+  }
+}
+```
+
+For Angular apps, use `run-script-os` to handle cross-platform PORT variable:
+- `"start:win32": "ng serve --port %PORT%"`
+- `"start:default": "ng serve --port $PORT"`
+
+### Reusable Rule
+When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
+1. **Vite apps**: Add `port: parseInt(process.env.PORT) || <default>` to `server` config in `vite.config.js`
+2. **Angular apps**: Use `run-script-os` with `--port %PORT%` (Windows) and `--port $PORT` (Unix)
+3. **Other dev servers**: Configure to read PORT from environment
+4. Verify the Aspire dashboard URL works, not just the localhost console URL
+
+---
+
+## Quick Reference Checklist
+
+### Adding a new JavaScript frontend to Aspire
+
+- [ ] Create unique service names (e.g., `apiservicevue`, `frontendvue`)
+- [ ] Add `Dockerfile` in frontend project
+- [ ] Add `default.conf.template` for nginx
+- [ ] Configure dev server to use `PORT` environment variable
+- [ ] Use `PublishAsDockerFile()` in AppHost
+- [ ] Update all files referencing service names/env vars
+- [ ] Verify Docker output paths match framework conventions
+
+### CI/CD for Aspire projects
+
+- [ ] Use `dotnet publish /t:PublishContainer` for .NET projects
+- [ ] Use `docker build` for JavaScript frontends
+- [ ] Do NOT use `aspire build` (doesn't exist)
+- [ ] Check `AppHost.cs` for `PublishAsDockerFile()` calls
