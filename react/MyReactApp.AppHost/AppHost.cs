@@ -7,10 +7,10 @@ var apiService = builder.AddProject<Projects.MyReactApp_api>("apiservice")
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddJavaScriptApp("frontend", "../myreactapp.web", "dev")
+var frontend = builder.AddViteApp("frontend", "../myreactapp.web", "dev")
                         .WithReference(apiService)
                         .WaitFor(apiService)
-                        .WithHttpEndpoint(env: "PORT")
+                        .WithHttpEndpoint(name: "frontend-http", env: "PORT")
                         .WithExternalHttpEndpoints()
                         .PublishAsDockerFile();
 
