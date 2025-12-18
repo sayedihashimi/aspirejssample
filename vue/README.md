@@ -23,14 +23,14 @@ This sample demonstrates a Vue 3 frontend with an ASP.NET Core API backend, orch
 
 In development, the Vue dev server proxies `/api/*` requests to the backend API service using environment variables provided by Aspire:
 
-- `APISERVICE_HTTPS` - HTTPS endpoint of the API service
-- `APISERVICE_HTTP` - HTTP endpoint of the API service
+- `APISERVICEVUE_HTTPS` - HTTPS endpoint of the API service
+- `APISERVICEVUE_HTTP` - HTTP endpoint of the API service
 
 The proxy configuration in `vite.config.js`:
 ```javascript
 proxy: {
   '/api': {
-    target: process.env.APISERVICE_HTTPS || process.env.APISERVICE_HTTP,
+    target: process.env.APISERVICEVUE_HTTPS || process.env.APISERVICEVUE_HTTP,
     changeOrigin: true,
     secure: false
   }

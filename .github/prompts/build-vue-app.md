@@ -44,7 +44,7 @@ B) Dev mode behavior
   - the API project
   - the Vue dev server
 - Vue dev server proxies `/api/*` to the API service using Aspire-injected env vars:
-  - APISERVICE_HTTPS and/or APISERVICE_HTTP (same pattern as React sample)
+  - APISERVICEVUE_HTTPS and/or APISERVICEVUE_HTTP (Vue-specific naming to avoid conflicts)
 - Vue UI fetches `/api/weatherforecast` and displays a table with columns:
   - Date, Temp (C), Temp (F), Summary
 - No hardcoded API base URL in Vue source; always relative `/api/...`
@@ -79,8 +79,8 @@ WHAT TO IMPLEMENT (MIRROR THE REACT SAMPLE)
 - Mirror React’s AppHost behavior:
   - `DistributedApplication.CreateBuilder(args)`
   - docker compose env line if present in React sample: `builder.AddDockerComposeEnvironment("env")`
-  - register API `"apiservice"` with health check + external endpoints
-  - register frontend `"frontend"` as a Vite app pointing to the Vue app directory
+  - register API `"apiservicevue"` with health check + external endpoints
+  - register frontend `"frontendvue"` as a Vite app pointing to the Vue app directory
     - Prefer the same Aspire JS hosting method as React uses (likely `AddViteApp`) and adjust only what’s needed for Vue.
   - `.WithReference(apiService)` and `.WaitFor(apiService)` and `.WithExternalHttpEndpoints()`
   - Production publish:
@@ -95,17 +95,17 @@ WHAT TO IMPLEMENT (MIRROR THE REACT SAMPLE)
   - shows a “Loading...” message until data is available
 - Dev proxy:
   - Configure Vite proxy for `/api` using:
-    - `process.env.APISERVICE_HTTPS || process.env.APISERVICE_HTTP`
+    - `process.env.APISERVICEVUE_HTTPS || process.env.APISERVICEVUE_HTTP`
   - `secure: false`, `changeOrigin: true`
 - Build:
   - `npm run build` outputs to `dist/`
 
 NAMING / CONSISTENCY
 - Prefer to follow the same naming style as the React sample, but under `vue/`.
-- Keep Aspire service names:
-  - API service name MUST be `"apiservice"`
-  - Frontend service name MUST be `"frontend"`
-  This ensures env var names like `APISERVICE_HTTP(S)` match.
+- Keep Aspire service names unique to avoid conflicts with other samples in the monorepo:
+  - API service name MUST be `"apiservicevue"`
+  - Frontend service name MUST be `"frontendvue"`
+  This ensures env var names like `APISERVICEVUE_HTTP(S)` are unique to the Vue sample.
 
 RECOMMENDED VUE IMPLEMENTATION DETAILS (KEEP IT SIMPLE)
 - Use Vue 3 + Vite.
@@ -142,7 +142,7 @@ STEP-BY-STEP EXECUTION PLAN (DO THIS)
 - Create the Vue Vite app under `vue/<frontend-folder>`.
 - Implement:
   - `vite.config.js` proxy identical in intent to React sample:
-    - `/api` -> `process.env.APISERVICE_HTTPS || process.env.APISERVICE_HTTP`
+    - `/api` -> `process.env.APISERVICEVUE_HTTPS || process.env.APISERVICEVUE_HTTP`
     - `changeOrigin: true`
     - `secure: false`
   - `build.outDir = 'dist'`
