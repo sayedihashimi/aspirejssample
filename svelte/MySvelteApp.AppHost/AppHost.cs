@@ -7,10 +7,9 @@ var apiService = builder.AddProject<Projects.MySvelteApp_api>("apiservicesvelte"
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddJavaScriptApp("frontendsvelte", "../mysvelteapp.web", "dev")
+var frontend = builder.AddViteApp("frontendsvelte", "../mysvelteapp.web")
                         .WithReference(apiService)
                         .WaitFor(apiService)
-                        .WithHttpEndpoint(env: "PORT")
                         .WithExternalHttpEndpoints()
                         .PublishAsDockerFile();
 

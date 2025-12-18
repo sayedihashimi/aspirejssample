@@ -7,10 +7,9 @@ var apiService = builder.AddProject<Projects.MyVueApp_api>("apiservicevue")
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddJavaScriptApp("frontendvue", "../myvueapp.web", "dev")
+var frontend = builder.AddViteApp("frontendvue", "../myvueapp.web")
                         .WithReference(apiService)
                         .WaitFor(apiService)
-                        .WithHttpEndpoint(env: "PORT")
                         .WithExternalHttpEndpoints()
                         .PublishAsDockerFile();
 

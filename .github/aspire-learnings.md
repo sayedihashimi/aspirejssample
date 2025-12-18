@@ -107,7 +107,7 @@ Setting up CI to build container images for an Aspire solution with both Angular
 The React frontend was missing Docker containerization support:
 1. No `Dockerfile` in the React project directory
 2. No `default.conf.template` for nginx configuration
-3. AppHost used `AddViteApp()` instead of `AddJavaScriptApp().PublishAsDockerFile()`
+3. AppHost needed `PublishAsDockerFile()` for CI container builds
 
 The Angular app had all these files, but React was configured differently.
 
@@ -137,12 +137,11 @@ ERROR: failed to build: failed to solve: failed to read dockerfile: open Dockerf
 
 2. Created `default.conf.template` for nginx with correct API service name
 
-3. Updated `AppHost.cs` to use `AddJavaScriptApp()` with `PublishAsDockerFile()`:
+3. Updated `AppHost.cs` to use `AddViteApp()` with `PublishAsDockerFile()`:
    ```csharp
-   var frontend = builder.AddJavaScriptApp("frontend", "../myreactapp.web", "dev")
+   var frontend = builder.AddViteApp("frontend", "../myreactapp.web")
        .WithReference(apiService)
        .WaitFor(apiService)
-       .WithHttpEndpoint(env: "PORT")
        .WithExternalHttpEndpoints()
        .PublishAsDockerFile();
    ```
@@ -200,52 +199,53 @@ grep "dist/" Dockerfile
 
 ---
 
-## 5. Aspire JavaScript apps must configure dev server to use PORT env var
+## 5. Aspire JavaScript apps must configure dev server to use PORT env var (except Vite apps using AddViteApp)
 
-**Tags:** aspire, javascript, vite, vue, react, angular, port-configuration, omission
+**Tags:** aspire, javascript, vite, vue, react, angular, port-configuration, omission, addviteapp
 
 ### Context
-When creating a JavaScript frontend app (Vue, React, Angular) with .NET Aspire, the AppHost uses `.WithHttpEndpoint(env: "PORT")` to tell Aspire to assign a port and set it in the PORT environment variable for the frontend dev server.
+When creating a JavaScript frontend app with .NET Aspire, PORT configuration depends on the hosting method:
+- **Vite-based apps**: Use `AddViteApp()` which handles PORT automatically - no `.WithHttpEndpoint(env: "PORT")` needed
+- **Non-Vite apps**: Use `AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")` and configure the dev server manually
 
 ### What Was Missed
-The Vue sample was created with `vite.config.js` that didn't configure Vite to listen on the PORT environment variable. The Aspire dashboard URL for the frontend didn't work because Vite was listening on its default port (5173) instead of the Aspire-assigned port.
+Originally, Vite apps used `AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")`, requiring manual PORT configuration in `vite.config.js`. This was unnecessary complexity.
 
 ### Impact
-- The URL shown in the Aspire dashboard for the frontend doesn't work
-- Users can only access the frontend via localhost URL in the console
-- Same issue occurred with Angular implementation before being fixed
+- Extra configuration burden for Vite-based apps
+- Confusion about when PORT configuration is needed
 
 ### What Fixed It
-For Vite-based apps (Vue, React), add `port: parseInt(process.env.PORT) || 5173` to the server config in `vite.config.js`:
-
-```javascript
-server: {
-  port: parseInt(process.env.PORT) || 5173,
-  proxy: {
-    // ...
-  }
-}
+For **Vite-based apps** (Vue, React, Svelte, Solid), use `AddViteApp()` which handles PORT automatically:
+```csharp
+var frontend = builder.AddViteApp("frontend", "../myreactapp.web")
+    .WithReference(apiService)
+    .WaitFor(apiService)
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
 ```
 
-For Angular apps, use `run-script-os` to handle cross-platform PORT variable:
+For **Angular apps**, use `AddJavaScriptApp()` with `run-script-os` to handle cross-platform PORT variable:
 - `"start:win32": "ng serve --port %PORT%"`
 - `"start:default": "ng serve --port $PORT"`
 
+For **Next.js, Nuxt, Astro**, use `AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")` and `run-script-os`.
+
 ### Reusable Rule
-When creating an Aspire JavaScript app with `.WithHttpEndpoint(env: "PORT")`:
-1. **Vite apps**: Add `port: parseInt(process.env.PORT) || <default>` to `server` config in `vite.config.js`
-2. **Angular apps**: Use `run-script-os` with `--port %PORT%` (Windows) and `--port $PORT` (Unix)
-3. **Other dev servers**: Configure to read PORT from environment
+When creating an Aspire JavaScript app:
+1. **Vite apps (React, Vue, Svelte, Solid)**: Use `AddViteApp()` - PORT is handled automatically, no `.WithHttpEndpoint(env: "PORT")` needed
+2. **Angular apps**: Use `AddJavaScriptApp()` with `run-script-os` and `--port %PORT%` / `--port $PORT`
+3. **Other dev servers (Next.js, Nuxt, Astro)**: Use `AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")` and configure to read PORT from environment
 4. Verify the Aspire dashboard URL works, not just the localhost console URL
 
 ---
 
-## 6. Aspire JavaScript hosting uses AddJavaScriptApp not AddNpmApp
+## 6. Aspire JavaScript hosting: AddViteApp for Vite apps, AddJavaScriptApp for others
 
-**Tags:** aspire, javascript, nextjs, hosting, build-failure, apphost
+**Tags:** aspire, javascript, nextjs, vite, hosting, build-failure, apphost, addviteapp
 
 ### Context
-Creating an Aspire-hosted Next.js (or other JavaScript/Node.js) application sample.
+Creating an Aspire-hosted JavaScript/Node.js application sample.
 
 ### What Was Missed
 The AppHost.cs used `AddNpmApp` which does not exist in the `Aspire.Hosting.JavaScript` package.
@@ -257,21 +257,31 @@ error CS1061: 'IDistributedApplicationBuilder' does not contain a definition for
 ```
 
 ### What Fixed It
-Changed `builder.AddNpmApp(...)` to `builder.AddJavaScriptApp(...)` which is the correct method name in `Aspire.Hosting.JavaScript`.
+Use the appropriate method based on the frontend framework:
 
 ```csharp
-// Wrong - does not exist
-var frontend = builder.AddNpmApp("frontendnextjs", "../mynextjsapp.web", "dev")
+// For Vite-based apps (React, Vue, Svelte, Solid) - preferred, handles PORT automatically
+var frontend = builder.AddViteApp("frontend", "../myreactapp.web")
+    .WithReference(apiService)
+    .WaitFor(apiService)
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
 
-// Correct
+// For non-Vite apps (Next.js, Nuxt, Astro, Angular) - requires manual PORT configuration
 var frontend = builder.AddJavaScriptApp("frontendnextjs", "../mynextjsapp.web", "dev")
+    .WithReference(apiService)
+    .WaitFor(apiService)
+    .WithHttpEndpoint(env: "PORT")
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
 ```
 
 ### Reusable Rule
-When adding JavaScript/Node.js apps (React, Next.js, Vue, Angular, etc.) to an Aspire AppHost:
-1. Use `builder.AddJavaScriptApp("serviceName", "path", "scriptName")`
-2. NOT `AddNpmApp` or `AddViteApp` (these are not valid method names)
-3. The `Aspire.Hosting.JavaScript` package provides `AddJavaScriptApp` as the generic method for any JavaScript framework
+When adding JavaScript/Node.js apps to an Aspire AppHost:
+1. **Vite-based apps (React, Vue, Svelte, Solid)**: Use `builder.AddViteApp()` - handles PORT automatically, no `.WithHttpEndpoint(env: "PORT")` needed
+2. **Non-Vite apps (Next.js, Nuxt, Astro, Angular)**: Use `builder.AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")`
+3. NOT `AddNpmApp` (does not exist)
+4. The `Aspire.Hosting.JavaScript` package provides both `AddViteApp` and `AddJavaScriptApp`
 
 ---
 
@@ -424,6 +434,64 @@ When creating Astro samples in Aspire:
 
 ---
 
+## 10. Aspire CLI Dashboard URLs use OSC 8 terminal hyperlinks requiring special regex extraction
+
+**Tags:** aspire, cli, dashboard, regex, osc8, hyperlink, terminal, powershell, automation
+
+### Context
+Creating a PowerShell script to programmatically start multiple Aspire apps and extract their Dashboard URLs from the CLI output.
+
+### What Was Missed
+The Aspire CLI uses **OSC 8 terminal hyperlinks** to make the Dashboard URL clickable in terminals. The output looks like plain text:
+```
+   Dashboard:  https://localhost:17159/login?t=...
+```
+
+But the actual byte stream contains ANSI escape sequences:
+```
+ESC[1;32mDashboard ESC[0m:  ESC]8;id=111501099;https://localhost:17159/login?t=...
+```
+
+The format is:
+- `ESC]8;` - OSC 8 hyperlink start
+- `id=xxx;` - optional hyperlink ID
+- `URL` - the actual URL embedded in the escape sequence
+- `ESC\` or `BEL` - hyperlink end
+
+A simple regex like `Dashboard:\s*(https?://\S+)` fails because the URL is part of the escape sequence, not plain text after "Dashboard:".
+
+### Impact
+Script reported "Timeout waiting for dashboard" even though the Dashboard URL was clearly visible in the terminal output. The regex couldn't match because it expected plain text.
+
+### What Fixed It
+Use a regex that extracts the URL from within the OSC 8 escape sequence:
+
+```powershell
+# Primary: Extract URL from OSC 8 hyperlink format
+if ($output -match '\x1b\]8;[^;]*;(https?://[^\x1b\x07]+)') {
+    $dashboardUrl = $Matches[1].Trim()
+}
+# Fallback: Plain URL after Dashboard: (for non-hyperlink output)
+elseif ($output -match 'Dashboard:\s*(https?://\S+)') {
+    $dashboardUrl = $Matches[1] -replace '[\x00-\x1f].*$', ''
+}
+```
+
+The pattern `\x1b\]8;[^;]*;(https?://[^\x1b\x07]+)` matches:
+- `\x1b\]8;` - ESC]8; (OSC 8 start)
+- `[^;]*;` - the id parameter and semicolon
+- `(https?://[^\x1b\x07]+)` - capture the URL until next escape or BEL
+
+### Reusable Rule
+When programmatically extracting URLs from Aspire CLI output:
+1. The Dashboard URL is wrapped in an OSC 8 hyperlink escape sequence
+2. Use regex `\x1b\]8;[^;]*;(https?://[^\x1b\x07]+)` to extract the URL
+3. Always provide a fallback regex for plain text output
+4. When redirecting output to files, ANSI codes are preserved - don't expect plain text
+5. The visible "Dashboard: https://..." in terminal is rendered from escape codes, not literal text
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
@@ -431,7 +499,9 @@ When creating Astro samples in Aspire:
 - [ ] Create unique service names (e.g., `apiservicevue`, `frontendvue`)
 - [ ] Add `Dockerfile` in frontend project
 - [ ] Add `default.conf.template` for nginx
-- [ ] Configure dev server to use `PORT` environment variable
+- [ ] Choose the right hosting method:
+  - **Vite apps (React, Vue, Svelte, Solid)**: Use `AddViteApp()` - PORT handled automatically
+  - **Non-Vite apps (Next.js, Nuxt, Astro, Angular)**: Use `AddJavaScriptApp()` with `.WithHttpEndpoint(env: "PORT")`
 - [ ] Use `PublishAsDockerFile()` in AppHost
 - [ ] Update all files referencing service names/env vars
 - [ ] Verify Docker output paths match framework conventions

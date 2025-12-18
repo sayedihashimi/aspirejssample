@@ -7,10 +7,9 @@ var apiService = builder.AddProject<Projects.MySolidApp_api>("apiservicesolid")
                         .WithHttpHealthCheck("/health")
                         .WithExternalHttpEndpoints();
 
-var frontend = builder.AddJavaScriptApp("frontendsolid", "../mysolidapp.web", "dev")
+var frontend = builder.AddViteApp("frontendsolid", "../mysolidapp.web")
                         .WithReference(apiService)
                         .WaitFor(apiService)
-                        .WithHttpEndpoint(env: "PORT")
                         .WithExternalHttpEndpoints()
                         .PublishAsDockerFile();
 
