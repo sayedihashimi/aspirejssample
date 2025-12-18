@@ -22,7 +22,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="app">
+  <div class="weather-container">
     <h1>Weather forecast</h1>
     <p>This component demonstrates fetching data from the server.</p>
     
@@ -55,15 +55,19 @@ onMounted(() => {
 </template>
 
 <style scoped>
-#app {
+.weather-container {
   margin: 0 auto;
   text-align: center;
   font-size: 1rem;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  width: 100%;
 }
 
 #weatherTable {
   border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  display: table;
 }
 
 #weatherTable tbody tr {
