@@ -22,6 +22,9 @@ jobs:
           - app: angular
             solution: angular/MyAngularApp.sln
             apphost-dir: angular/MyAngularApp.AppHost
+          - app: vue
+            solution: vue/MyVueApp.sln
+            apphost-dir: vue/MyVueApp.AppHost
     name: Build ${{ matrix.app }}
     steps:
       - name: Checkout
@@ -79,6 +82,9 @@ jobs:
           if [ "${{ matrix.app }}" = "angular" ]; then
             API_PROJECT="${{ matrix.app }}/MyAngularApp.api/MyAngularApp.api.csproj"
             API_IMAGE_NAME="apiserviceangular"
+          elif [ "${{ matrix.app }}" = "vue" ]; then
+            API_PROJECT="${{ matrix.app }}/MyVueApp.api/MyVueApp.api.csproj"
+            API_IMAGE_NAME="apiservicevue"
           else
             API_PROJECT="${{ matrix.app }}/MyReactApp.api/MyReactApp.api.csproj"
             API_IMAGE_NAME="apiservice"
@@ -90,6 +96,9 @@ jobs:
           if [ "${{ matrix.app }}" = "angular" ]; then
             FRONTEND_DIR="${{ matrix.app }}/myangularapp.web"
             FRONTEND_IMAGE_NAME="frontendangular"
+          elif [ "${{ matrix.app }}" = "vue" ]; then
+            FRONTEND_DIR="${{ matrix.app }}/myvueapp.web"
+            FRONTEND_IMAGE_NAME="frontendvue"
           else
             FRONTEND_DIR="${{ matrix.app }}/myreactapp.web"
             FRONTEND_IMAGE_NAME="frontend"
@@ -117,6 +126,9 @@ jobs:
           if [ "${{ matrix.app }}" = "angular" ]; then
             API_IMAGE_NAME="apiserviceangular"
             FRONTEND_IMAGE_NAME="frontendangular"
+          elif [ "${{ matrix.app }}" = "vue" ]; then
+            API_IMAGE_NAME="apiservicevue"
+            FRONTEND_IMAGE_NAME="frontendvue"
           else
             API_IMAGE_NAME="apiservice"
             FRONTEND_IMAGE_NAME="frontend"
