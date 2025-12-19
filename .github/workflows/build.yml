@@ -90,71 +90,22 @@ jobs:
       - name: Build container images
         run: |
           set -e
-          COMMIT_SHA="${{ github.sha }}"
           
-          # Build the API service container using dotnet publish
-          echo "Building API service container..."
-          if [ "${{ matrix.app }}" = "angular" ]; then
-            API_PROJECT="${{ matrix.app }}/MyAngularApp.api/MyAngularApp.api.csproj"
-            API_IMAGE_NAME="apiserviceangular"
-          elif [ "${{ matrix.app }}" = "vue" ]; then
-            API_PROJECT="${{ matrix.app }}/MyVueApp.api/MyVueApp.api.csproj"
-            API_IMAGE_NAME="apiservicevue"
-          elif [ "${{ matrix.app }}" = "svelte" ]; then
-            API_PROJECT="${{ matrix.app }}/MySvelteApp.api/MySvelteApp.api.csproj"
-            API_IMAGE_NAME="apiservicesvelte"
-          elif [ "${{ matrix.app }}" = "solid" ]; then
-            API_PROJECT="${{ matrix.app }}/MySolidApp.api/MySolidApp.api.csproj"
-            API_IMAGE_NAME="apiservicesolid"
-          elif [ "${{ matrix.app }}" = "astro" ]; then
-            API_PROJECT="${{ matrix.app }}/MyAstroApp.api/MyAstroApp.api.csproj"
-            API_IMAGE_NAME="apiserviceastro"
-          elif [ "${{ matrix.app }}" = "nextjs" ]; then
-            API_PROJECT="${{ matrix.app }}/MyNextJsApp.api/MyNextJsApp.api.csproj"
-            API_IMAGE_NAME="apiservicenextjs"
-          elif [ "${{ matrix.app }}" = "nuxtjs" ]; then
-            API_PROJECT="${{ matrix.app }}/MyNuxtApp.api/MyNuxtApp.api.csproj"
-            API_IMAGE_NAME="apiservicenuxtjs"
-          else
-            API_PROJECT="${{ matrix.app }}/MyReactApp.api/MyReactApp.api.csproj"
-            API_IMAGE_NAME="apiservice"
-          fi
-          dotnet publish "$API_PROJECT" -c Release /t:PublishContainer -p:ContainerRepository="$API_IMAGE_NAME" -p:ContainerImageTag="$COMMIT_SHA"
+          # Get the AppHost project path from the matrix
+          APPHOST_PROJECT="${{ matrix.apphost-dir }}/"
+          # Find the .csproj file in the AppHost directory
+          APPHOST_CSPROJ=$(find "$APPHOST_PROJECT" -maxdepth 1 -name "*.csproj" | head -1)
           
-          # Build the frontend container using Docker
-          echo "Building frontend container..."
-          if [ "${{ matrix.app }}" = "angular" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/myangularapp.web"
-            FRONTEND_IMAGE_NAME="frontendangular"
-          elif [ "${{ matrix.app }}" = "vue" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/myvueapp.web"
-            FRONTEND_IMAGE_NAME="frontendvue"
-          elif [ "${{ matrix.app }}" = "svelte" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/mysvelteapp.web"
-            FRONTEND_IMAGE_NAME="frontendsvelte"
-          elif [ "${{ matrix.app }}" = "solid" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/mysolidapp.web"
-            FRONTEND_IMAGE_NAME="frontendsolid"
-          elif [ "${{ matrix.app }}" = "astro" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/myastroapp.web"
-            FRONTEND_IMAGE_NAME="frontendastro"
-          elif [ "${{ matrix.app }}" = "nextjs" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/mynextjsapp.web"
-            FRONTEND_IMAGE_NAME="frontendnextjs"
-          elif [ "${{ matrix.app }}" = "nuxtjs" ]; then
-            FRONTEND_DIR="${{ matrix.app }}/mynuxtapp.web"
-            FRONTEND_IMAGE_NAME="frontendnuxtjs"
-          else
-            FRONTEND_DIR="${{ matrix.app }}/myreactapp.web"
-            FRONTEND_IMAGE_NAME="frontend"
-          fi
-          docker build -t "$FRONTEND_IMAGE_NAME:$COMMIT_SHA" "$FRONTEND_DIR"
+          echo "Building container images using aspire do build..."
+          echo "AppHost project: $APPHOST_CSPROJ"
           
-          echo "Listing docker images after build";
+          aspire do build --project "$APPHOST_CSPROJ"
+          
+          echo "Listing docker images after build"
           docker images | head -n 30
 
       - name: Login to GHCR
-        if: ${{ github.ref == 'refs/heads/publish' }}
+        if: ${{ github.ref == 'refs/heads/publish' || github.ref == 'refs/heads/ci-test' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -167,7 +118,7 @@ jobs:
           set -e
           COMMIT_SHA="${{ github.sha }}"
           
-          # Set image names based on matrix app
+          # Set image names based on matrix app (matches service names in AppHost.cs)
           if [ "${{ matrix.app }}" = "angular" ]; then
             API_IMAGE_NAME="apiserviceangular"
             FRONTEND_IMAGE_NAME="frontendangular"
@@ -194,20 +145,23 @@ jobs:
             FRONTEND_IMAGE_NAME="frontend"
           fi
           
+          # aspire do build creates images with :latest tag by default
+          # Tag with commit SHA and push both versions
+          
           # Push API service image
           API_TARGET_REPO="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}-$API_IMAGE_NAME"
-          echo "Tagging and pushing $API_IMAGE_NAME:$COMMIT_SHA as $API_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$API_IMAGE_NAME:$COMMIT_SHA" "$API_TARGET_REPO:$COMMIT_SHA"
+          echo "Tagging and pushing $API_IMAGE_NAME:latest as $API_TARGET_REPO:$COMMIT_SHA"
+          docker tag "$API_IMAGE_NAME:latest" "$API_TARGET_REPO:$COMMIT_SHA"
           docker push "$API_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$API_IMAGE_NAME:$COMMIT_SHA" "$API_TARGET_REPO:latest"
+          docker tag "$API_IMAGE_NAME:latest" "$API_TARGET_REPO:latest"
           docker push "$API_TARGET_REPO:latest"
           
           # Push frontend image
           FRONTEND_TARGET_REPO="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}-$FRONTEND_IMAGE_NAME"
-          echo "Tagging and pushing $FRONTEND_IMAGE_NAME:$COMMIT_SHA as $FRONTEND_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$FRONTEND_IMAGE_NAME:$COMMIT_SHA" "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
+          echo "Tagging and pushing $FRONTEND_IMAGE_NAME:latest as $FRONTEND_TARGET_REPO:$COMMIT_SHA"
+          docker tag "$FRONTEND_IMAGE_NAME:latest" "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
           docker push "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$FRONTEND_IMAGE_NAME:$COMMIT_SHA" "$FRONTEND_TARGET_REPO:latest"
+          docker tag "$FRONTEND_IMAGE_NAME:latest" "$FRONTEND_TARGET_REPO:latest"
           docker push "$FRONTEND_TARGET_REPO:latest"
           
           echo "Pushed images: $API_TARGET_REPO and $FRONTEND_TARGET_REPO"

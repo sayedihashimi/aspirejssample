@@ -4,37 +4,51 @@ This document contains accumulated learnings from working with .NET Aspire proje
 
 ---
 
-## 1. Aspire CLI does not have a 'build' command - use dotnet publish and docker build for container images
+## 1. Aspire CLI 'aspire do build' command for container images (Aspire 13+)
 
-**Tags:** aspire, ci, build-yml, docker, container, github-actions, dotnet-publish, aspire-cli
+**Tags:** aspire, ci, build-yml, docker, container, github-actions, aspire-cli, aspire-do-build
 
 ### Context
-CI pipeline was using `aspire build` or `aspire do build` commands to build Docker container images for an Aspire-based application with JavaScript frontends.
+CI pipeline needs to build Docker container images for an Aspire-based application with JavaScript frontends.
 
-### What Was Missed
-The Aspire CLI does not have a `build` command. The available commands are:
-- `new` - Create a new Aspire project
-- `init` - Initialize Aspire support
-- `run` - Run in development mode
-- `add` - Add hosting integrations
-- `publish` - Generate deployment artifacts (Preview)
-- `deploy` - Deploy to targets (Preview)
-- `do` - Execute pipeline steps (Preview)
+### Evolution of Aspire CLI Build Support
 
-The `aspire publish` command generates manifests and docker-compose files but does NOT build Docker images.
+**Before Aspire 13:** The Aspire CLI did not have a `build` command. The workaround was:
+- Use `dotnet publish /t:PublishContainer` for .NET projects
+- Use `docker build` for JavaScript frontends
 
-### Impact
-CI pipeline failed with:
-```
-Unrecognized command or argument 'build'.
+**Aspire 13+:** The `aspire do build` command is now available and is the **preferred approach**. It automatically builds all container images defined in the AppHost.
+
+### Current Recommended Approach (Aspire 13+)
+
+Use `aspire do build` with the `--project` parameter pointing to the AppHost:
+
+```bash
+aspire do build --project ./path/to/AppHost.csproj
 ```
 
-### What Fixed It
-Replace `aspire build` with the proper image building approach:
+This command:
+- Automatically discovers all services in the AppHost
+- Builds .NET projects with container support
+- Builds Dockerfiles for JavaScript apps with `PublishAsDockerFile()`
+- Tags images with `:latest` by default
+
+### Example CI Usage
+
+```yaml
+- name: Build container images
+  run: |
+    aspire do build --project "${{ matrix.apphost-dir }}/AppHost.csproj"
+    docker images | head -n 30
+```
+
+### Legacy Approach (Pre-Aspire 13)
+
+If `aspire do build` is not available:
 
 1. **For .NET API projects**: Use `dotnet publish` with container support:
    ```bash
-   dotnet publish "path/to/Project.csproj" -c Release /t:PublishContainer -p:ContainerImageName="imagename" -p:ContainerImageTag="$COMMIT_SHA"
+   dotnet publish "path/to/Project.csproj" -c Release /t:PublishContainer -p:ContainerRepository="imagename" -p:ContainerImageTag="$COMMIT_SHA"
    ```
 
 2. **For JavaScript apps with `PublishAsDockerFile()`**: Build Docker images directly:
@@ -44,11 +58,12 @@ Replace `aspire build` with the proper image building approach:
 
 ### Reusable Rule
 When building container images in CI for Aspire applications:
-1. Do NOT use `aspire build` - it doesn't exist
-2. Use `dotnet publish /t:PublishContainer` for .NET projects
-3. Use `docker build` for JavaScript/Node apps with Dockerfiles
-4. The `aspire publish` command generates deployment manifests, not container images
-5. Check the AppHost.cs for `PublishAsDockerFile()` calls to identify which services need Docker builds
+1. **Aspire 13+**: Use `aspire do build --project <AppHost.csproj>` (preferred)
+2. **Pre-Aspire 13**: Use `dotnet publish /t:PublishContainer` for .NET projects + `docker build` for JavaScript frontends
+3. Images built by `aspire do build` are tagged with `:latest` - retag with commit SHA for versioning if needed
+4. The `--project` parameter must point to the AppHost `.csproj` file
+
+Reference: https://aspire.dev/reference/cli/commands/aspire-do/
 
 ---
 
@@ -542,12 +557,75 @@ When creating new Aspire samples by copying from templates:
 
 ---
 
+## 12. PublishWithContainerFiles requires /app/dist in frontend Docker images
+
+**Tags:** aspire, docker, dockerfile, publishwithcontainerfiles, multi-stage-build, ci, omission
+
+### Context
+Using `aspire do build` with `PublishWithContainerFiles()` in the AppHost to copy static frontend files into the API container image.
+
+### What Was Missed
+Frontend Dockerfiles used multi-stage builds that:
+1. Build the frontend in a `node:20` stage at `/app`
+2. Copy only the production output to a `nginx:alpine` stage at `/usr/share/nginx/html`
+
+The final nginx image does NOT contain `/app/dist` - that path only exists in the discarded build stage.
+
+The `PublishWithContainerFiles(frontend, "./wwwroot")` method expects to find files at `/app/dist` in the frontend container.
+
+### Impact
+`aspire do build` fails with:
+```
+ERROR: failed to calculate checksum of ref ... "/app/dist": not found
+```
+
+The API service build step fails because it can't find `/app/dist` in the nginx-based frontend image.
+
+### What Fixed It
+Add an extra COPY instruction in the final Dockerfile stage to keep the dist files at `/app/dist`:
+
+```dockerfile
+FROM nginx:alpine
+
+COPY --from=build /app/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist /usr/share/nginx/html
+# Keep dist at /app/dist for Aspire PublishWithContainerFiles
+COPY --from=build /app/dist /app/dist
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Note**: Source paths vary by framework:
+- Vite apps (React, Vue, Svelte, Solid, Astro): `/app/dist`
+- Angular: `/app/dist/<projectname>/browser`
+- Next.js: `/app/out`
+- Nuxt: `/app/.output/public`
+
+### Reusable Rule
+When using `PublishWithContainerFiles()` with multi-stage Docker builds:
+1. The frontend Dockerfile MUST have `/app/dist` in the final image
+2. Add a second COPY instruction: `COPY --from=build /app/<source> /app/dist`
+3. This applies to ALL JavaScript frontends using nginx multi-stage builds
+4. The source path depends on the framework's build output location
+5. Add a comment explaining why the duplicate COPY exists
+
+**Search pattern to verify:**
+```bash
+grep -l "PublishWithContainerFiles" **/AppHost.cs
+# For each match, verify the corresponding frontend Dockerfile has /app/dist
+grep "/app/dist$" **/Dockerfile
+```
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
 
 - [ ] Create unique service names (e.g., `apiservicevue`, `frontendvue`)
 - [ ] Add `Dockerfile` in frontend project
+  - [ ] If using `PublishWithContainerFiles()`, include `/app/dist` in final stage
 - [ ] Add `default.conf.template` for nginx
 - [ ] Choose the right hosting method:
   - **Vite apps (React, Vue, Svelte, Solid)**: Use `AddViteApp()` - PORT handled automatically
@@ -559,7 +637,7 @@ When creating new Aspire samples by copying from templates:
 
 ### CI/CD for Aspire projects
 
-- [ ] Use `dotnet publish /t:PublishContainer` for .NET projects
-- [ ] Use `docker build` for JavaScript frontends
-- [ ] Do NOT use `aspire build` (doesn't exist)
+- [ ] **Aspire 13+**: Use `aspire do build --project <AppHost.csproj>` (preferred)
+- [ ] **Pre-Aspire 13**: Use `dotnet publish /t:PublishContainer` for .NET projects + `docker build` for JavaScript frontends
+- [ ] If using `PublishWithContainerFiles()`, ensure Dockerfiles have `/app/dist` in final stage
 - [ ] Check `AppHost.cs` for `PublishAsDockerFile()` calls

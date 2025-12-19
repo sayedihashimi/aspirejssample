@@ -8,5 +8,7 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=build /app/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+# Keep dist at /app/dist for Aspire PublishWithContainerFiles
+COPY --from=build /app/dist /app/dist
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
