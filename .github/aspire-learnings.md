@@ -4,37 +4,51 @@ This document contains accumulated learnings from working with .NET Aspire proje
 
 ---
 
-## 1. Aspire CLI does not have a 'build' command - use dotnet publish and docker build for container images
+## 1. Aspire CLI 'aspire do build' command for container images (Aspire 13+)
 
-**Tags:** aspire, ci, build-yml, docker, container, github-actions, dotnet-publish, aspire-cli
+**Tags:** aspire, ci, build-yml, docker, container, github-actions, aspire-cli, aspire-do-build
 
 ### Context
-CI pipeline was using `aspire build` or `aspire do build` commands to build Docker container images for an Aspire-based application with JavaScript frontends.
+CI pipeline needs to build Docker container images for an Aspire-based application with JavaScript frontends.
 
-### What Was Missed
-The Aspire CLI does not have a `build` command. The available commands are:
-- `new` - Create a new Aspire project
-- `init` - Initialize Aspire support
-- `run` - Run in development mode
-- `add` - Add hosting integrations
-- `publish` - Generate deployment artifacts (Preview)
-- `deploy` - Deploy to targets (Preview)
-- `do` - Execute pipeline steps (Preview)
+### Evolution of Aspire CLI Build Support
 
-The `aspire publish` command generates manifests and docker-compose files but does NOT build Docker images.
+**Before Aspire 13:** The Aspire CLI did not have a `build` command. The workaround was:
+- Use `dotnet publish /t:PublishContainer` for .NET projects
+- Use `docker build` for JavaScript frontends
 
-### Impact
-CI pipeline failed with:
-```
-Unrecognized command or argument 'build'.
+**Aspire 13+:** The `aspire do build` command is now available and is the **preferred approach**. It automatically builds all container images defined in the AppHost.
+
+### Current Recommended Approach (Aspire 13+)
+
+Use `aspire do build` with the `--project` parameter pointing to the AppHost:
+
+```bash
+aspire do build --project ./path/to/AppHost.csproj
 ```
 
-### What Fixed It
-Replace `aspire build` with the proper image building approach:
+This command:
+- Automatically discovers all services in the AppHost
+- Builds .NET projects with container support
+- Builds Dockerfiles for JavaScript apps with `PublishAsDockerFile()`
+- Tags images with `:latest` by default
+
+### Example CI Usage
+
+```yaml
+- name: Build container images
+  run: |
+    aspire do build --project "${{ matrix.apphost-dir }}/AppHost.csproj"
+    docker images | head -n 30
+```
+
+### Legacy Approach (Pre-Aspire 13)
+
+If `aspire do build` is not available:
 
 1. **For .NET API projects**: Use `dotnet publish` with container support:
    ```bash
-   dotnet publish "path/to/Project.csproj" -c Release /t:PublishContainer -p:ContainerImageName="imagename" -p:ContainerImageTag="$COMMIT_SHA"
+   dotnet publish "path/to/Project.csproj" -c Release /t:PublishContainer -p:ContainerRepository="imagename" -p:ContainerImageTag="$COMMIT_SHA"
    ```
 
 2. **For JavaScript apps with `PublishAsDockerFile()`**: Build Docker images directly:
@@ -44,11 +58,12 @@ Replace `aspire build` with the proper image building approach:
 
 ### Reusable Rule
 When building container images in CI for Aspire applications:
-1. Do NOT use `aspire build` - it doesn't exist
-2. Use `dotnet publish /t:PublishContainer` for .NET projects
-3. Use `docker build` for JavaScript/Node apps with Dockerfiles
-4. The `aspire publish` command generates deployment manifests, not container images
-5. Check the AppHost.cs for `PublishAsDockerFile()` calls to identify which services need Docker builds
+1. **Aspire 13+**: Use `aspire do build --project <AppHost.csproj>` (preferred)
+2. **Pre-Aspire 13**: Use `dotnet publish /t:PublishContainer` for .NET projects + `docker build` for JavaScript frontends
+3. Images built by `aspire do build` are tagged with `:latest` - retag with commit SHA for versioning if needed
+4. The `--project` parameter must point to the AppHost `.csproj` file
+
+Reference: https://aspire.dev/reference/cli/commands/aspire-do/
 
 ---
 
