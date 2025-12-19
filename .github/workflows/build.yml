@@ -105,7 +105,7 @@ jobs:
           docker images | head -n 30
 
       - name: Login to GHCR
-        if: ${{ github.ref == 'refs/heads/publish' }}
+        if: ${{ github.ref == 'refs/heads/publish' || github.ref == 'refs/heads/ci-test' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
