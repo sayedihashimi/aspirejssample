@@ -1,6 +1,6 @@
-# Next.js with .NET Aspire Sample
+# Next.js with Aspire Sample
 
-This sample demonstrates how to integrate a Next.js frontend with a .NET Aspire backend.
+This sample demonstrates how to integrate a Next.js frontend with an Aspire backend.
 
 ## Structure
 
@@ -13,13 +13,15 @@ This sample demonstrates how to integrate a Next.js frontend with a .NET Aspire 
 
 ### Development Mode
 
-1. Navigate to the `nextjs` folder
-2. Run the AppHost project:
+1. From the repository root, run the AppHost using the Aspire CLI:
    ```bash
-   dotnet run --project MyNextJsApp.AppHost
+   aspire run --project nextjs/MyNextJsApp.AppHost/MyNextJsApp.AppHost.csproj
    ```
-3. The Aspire dashboard will open, showing both the API and frontend services
-4. Click on the frontend URL to open the Next.js application
+
+   > **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
+
+2. The Aspire dashboard will open, showing both the API and frontend services
+3. Click on the frontend URL to open the Next.js application
 
 ### How Dev Proxy Works
 

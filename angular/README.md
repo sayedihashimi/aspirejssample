@@ -1,6 +1,6 @@
 # Angular Aspire Sample
 
-This is an Angular sample that demonstrates .NET Aspire orchestration with an Angular frontend and ASP.NET Core Web API backend.
+This is an Angular sample that demonstrates Aspire orchestration with an Angular frontend and ASP.NET Core Web API backend.
 
 ## Project Structure
 
@@ -28,11 +28,13 @@ This is an Angular sample that demonstrates .NET Aspire orchestration with an An
 
 ### Run Locally
 
-From the `angular/` folder, run the AppHost:
+From the repository root, run the AppHost using the Aspire CLI:
 
 ```bash
-dotnet run --project MyAngularApp.AppHost
+aspire run --project angular/MyAngularApp.AppHost/MyAngularApp.AppHost.csproj
 ```
+
+> **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
 
 This will:
 1. Start the ASP.NET Core Web API on a dynamic port
@@ -111,6 +113,6 @@ npm run build
 
 ## Related Documentation
 
-- [.NET Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
+- [Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
 - [Orchestrate Node.js apps in Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/build-aspire-apps-with-nodejs)
 - [Angular Documentation](https://angular.dev/)

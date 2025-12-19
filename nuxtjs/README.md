@@ -1,6 +1,6 @@
-# Nuxt.js Sample with .NET Aspire
+# Nuxt.js Sample with Aspire
 
-This sample demonstrates a Nuxt.js 3 frontend integrated with .NET Aspire orchestration, featuring an ASP.NET Core Web API backend.
+This sample demonstrates a Nuxt.js 3 frontend integrated with Aspire orchestration, featuring an ASP.NET Core Web API backend.
 
 ## Architecture
 
@@ -13,12 +13,13 @@ The solution consists of:
 
 ## Running in Development
 
-To run the application:
+From the repository root, run the AppHost using the Aspire CLI:
 
 ```bash
-cd MyNuxtApp.AppHost
-dotnet run
+aspire run --project nuxtjs/MyNuxtApp.AppHost/MyNuxtApp.AppHost.csproj
 ```
+
+> **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
 
 This will:
 1. Start the Aspire dashboard
@@ -84,7 +85,7 @@ npm run generate
 ## Technology Stack
 
 - .NET 10.0
-- .NET Aspire 13
+- Aspire 13
 - Nuxt.js 3 (Vue 3 with Vite)
 - ASP.NET Core Web API
 - OpenTelemetry for observability

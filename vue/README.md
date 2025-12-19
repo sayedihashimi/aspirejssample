@@ -1,6 +1,6 @@
 # Vue Aspire Sample
 
-This sample demonstrates a Vue 3 frontend with an ASP.NET Core API backend, orchestrated using .NET Aspire.
+This sample demonstrates a Vue 3 frontend with an ASP.NET Core API backend, orchestrated using Aspire.
 
 ## Project Structure
 
@@ -11,11 +11,13 @@ This sample demonstrates a Vue 3 frontend with an ASP.NET Core API backend, orch
 
 ## Running in Development
 
-1. Navigate to the `vue` folder
-2. Run the AppHost:
-   ```bash
-   dotnet run --project MyVueApp.AppHost
-   ```
+From the repository root, run the AppHost using the Aspire CLI:
+
+```bash
+aspire run --project vue/MyVueApp.AppHost/MyVueApp.AppHost.csproj
+```
+
+> **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
 3. The Aspire dashboard will open, showing both the API and frontend services
 4. Click on the frontend endpoint to view the Vue app
 

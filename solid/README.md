@@ -1,10 +1,10 @@
 # SolidJS Aspire Sample
 
-This sample demonstrates a SolidJS frontend application integrated with .NET Aspire.
+This sample demonstrates a SolidJS frontend application integrated with Aspire.
 
 ## Structure
 
-- **MySolidApp.AppHost** - .NET Aspire orchestrator
+- **MySolidApp.AppHost** - Aspire orchestrator
 - **MySolidApp.api** - ASP.NET Core Web API backend
 - **MySolidApp.ServiceDefaults** - Aspire ServiceDefaults shared project
 - **mysolidapp.web** - SolidJS frontend (Vite-based)
@@ -13,13 +13,14 @@ This sample demonstrates a SolidJS frontend application integrated with .NET Asp
 
 1. Make sure you have .NET 10 SDK installed
 2. Make sure you have Node.js 20+ installed
-3. Navigate to the `solid` directory
-4. Run the AppHost:
+3. From the repository root, run the AppHost using the Aspire CLI:
    ```bash
-   dotnet run --project MySolidApp.AppHost
+   aspire run --project solid/MySolidApp.AppHost/MySolidApp.AppHost.csproj
    ```
-5. Open the Aspire Dashboard URL shown in the console
-6. Access the frontend through the dashboard
+4. Open the Aspire Dashboard URL shown in the console
+5. Access the frontend through the dashboard
+
+> **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
 
 ## How It Works
 

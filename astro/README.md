@@ -1,11 +1,11 @@
-# Astro with .NET Aspire Sample
+# Astro with Aspire Sample
 
-This sample demonstrates how to use [Astro](https://astro.build/) with [.NET Aspire](https://learn.microsoft.com/dotnet/aspire/) for local development and production deployment.
+This sample demonstrates how to use [Astro](https://astro.build/) with [Aspire](https://learn.microsoft.com/dotnet/aspire/) for local development and production deployment.
 
 ## Architecture
 
 This solution consists of:
-- **MyAstroApp.AppHost** - .NET Aspire orchestrator that manages the development experience
+- **MyAstroApp.AppHost** - Aspire orchestrator that manages the development experience
 - **MyAstroApp.api** - ASP.NET Core Web API backend that serves the weather forecast data
 - **MyAstroApp.ServiceDefaults** - Shared Aspire service defaults (health checks, OpenTelemetry)
 - **myastroapp.web** - Astro frontend application
@@ -81,10 +81,12 @@ apiService.PublishWithContainerFiles(frontend, "./wwwroot");
    cd ..
    ```
 
-2. Run the AppHost:
+2. From the repository root, run the AppHost using the Aspire CLI:
    ```bash
-   dotnet run --project MyAstroApp.AppHost
+   aspire run --project astro/MyAstroApp.AppHost/MyAstroApp.AppHost.csproj
    ```
+
+   > **Note:** The `--project` parameter is required because this repository contains multiple Aspire apps.
 
 3. Open the Aspire dashboard (URL shown in console) and click on the frontend endpoint to view the application.
 
@@ -133,5 +135,5 @@ The following environment variables are automatically set by Aspire:
 ## Learn More
 
 - [Astro Documentation](https://docs.astro.build/)
-- [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
+- [Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
 - [Aspire with JavaScript Samples](https://github.com/dotnet/aspire-samples/tree/main/samples/aspire-with-javascript)
