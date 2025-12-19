@@ -557,12 +557,75 @@ When creating new Aspire samples by copying from templates:
 
 ---
 
+## 12. PublishWithContainerFiles requires /app/dist in frontend Docker images
+
+**Tags:** aspire, docker, dockerfile, publishwithcontainerfiles, multi-stage-build, ci, omission
+
+### Context
+Using `aspire do build` with `PublishWithContainerFiles()` in the AppHost to copy static frontend files into the API container image.
+
+### What Was Missed
+Frontend Dockerfiles used multi-stage builds that:
+1. Build the frontend in a `node:20` stage at `/app`
+2. Copy only the production output to a `nginx:alpine` stage at `/usr/share/nginx/html`
+
+The final nginx image does NOT contain `/app/dist` - that path only exists in the discarded build stage.
+
+The `PublishWithContainerFiles(frontend, "./wwwroot")` method expects to find files at `/app/dist` in the frontend container.
+
+### Impact
+`aspire do build` fails with:
+```
+ERROR: failed to calculate checksum of ref ... "/app/dist": not found
+```
+
+The API service build step fails because it can't find `/app/dist` in the nginx-based frontend image.
+
+### What Fixed It
+Add an extra COPY instruction in the final Dockerfile stage to keep the dist files at `/app/dist`:
+
+```dockerfile
+FROM nginx:alpine
+
+COPY --from=build /app/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist /usr/share/nginx/html
+# Keep dist at /app/dist for Aspire PublishWithContainerFiles
+COPY --from=build /app/dist /app/dist
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Note**: Source paths vary by framework:
+- Vite apps (React, Vue, Svelte, Solid, Astro): `/app/dist`
+- Angular: `/app/dist/<projectname>/browser`
+- Next.js: `/app/out`
+- Nuxt: `/app/.output/public`
+
+### Reusable Rule
+When using `PublishWithContainerFiles()` with multi-stage Docker builds:
+1. The frontend Dockerfile MUST have `/app/dist` in the final image
+2. Add a second COPY instruction: `COPY --from=build /app/<source> /app/dist`
+3. This applies to ALL JavaScript frontends using nginx multi-stage builds
+4. The source path depends on the framework's build output location
+5. Add a comment explaining why the duplicate COPY exists
+
+**Search pattern to verify:**
+```bash
+grep -l "PublishWithContainerFiles" **/AppHost.cs
+# For each match, verify the corresponding frontend Dockerfile has /app/dist
+grep "/app/dist$" **/Dockerfile
+```
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
 
 - [ ] Create unique service names (e.g., `apiservicevue`, `frontendvue`)
 - [ ] Add `Dockerfile` in frontend project
+  - [ ] If using `PublishWithContainerFiles()`, include `/app/dist` in final stage
 - [ ] Add `default.conf.template` for nginx
 - [ ] Choose the right hosting method:
   - **Vite apps (React, Vue, Svelte, Solid)**: Use `AddViteApp()` - PORT handled automatically
@@ -574,7 +637,7 @@ When creating new Aspire samples by copying from templates:
 
 ### CI/CD for Aspire projects
 
-- [ ] Use `dotnet publish /t:PublishContainer` for .NET projects
-- [ ] Use `docker build` for JavaScript frontends
-- [ ] Do NOT use `aspire build` (doesn't exist)
+- [ ] **Aspire 13+**: Use `aspire do build --project <AppHost.csproj>` (preferred)
+- [ ] **Pre-Aspire 13**: Use `dotnet publish /t:PublishContainer` for .NET projects + `docker build` for JavaScript frontends
+- [ ] If using `PublishWithContainerFiles()`, ensure Dockerfiles have `/app/dist` in final stage
 - [ ] Check `AppHost.cs` for `PublishAsDockerFile()` calls
