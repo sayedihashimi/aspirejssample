@@ -145,23 +145,58 @@ jobs:
             FRONTEND_IMAGE_NAME="frontend"
           fi
           
-          # aspire do build creates images with :latest tag by default
-          # Tag with commit SHA and push both versions
+          # aspire do build creates images with either :latest or :<commit-sha> tags
+          # Find the actual tag that was created for each image
+          find_image_tag() {
+            local image_name=$1
+            # First try :latest
+            if docker image inspect "$image_name:latest" >/dev/null 2>&1; then
+              echo "latest"
+              return 0
+            fi
+            # Otherwise find any tag for this image (aspire uses commit SHA)
+            local tag=$(docker images --format "{{.Tag}}" "$image_name" | head -1)
+            if [ -n "$tag" ]; then
+              echo "$tag"
+              return 0
+            fi
+            echo ""
+            return 1
+          }
+          
+          # Find actual tags for API and frontend images
+          API_TAG=$(find_image_tag "$API_IMAGE_NAME")
+          FRONTEND_TAG=$(find_image_tag "$FRONTEND_IMAGE_NAME")
+          
+          echo "Found API image: $API_IMAGE_NAME:$API_TAG"
+          echo "Found Frontend image: $FRONTEND_IMAGE_NAME:$FRONTEND_TAG"
+          
+          if [ -z "$API_TAG" ]; then
+            echo "ERROR: Could not find image for $API_IMAGE_NAME"
+            docker images
+            exit 1
+          fi
+          
+          if [ -z "$FRONTEND_TAG" ]; then
+            echo "ERROR: Could not find image for $FRONTEND_IMAGE_NAME"
+            docker images
+            exit 1
+          fi
           
           # Push API service image
           API_TARGET_REPO="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}-$API_IMAGE_NAME"
-          echo "Tagging and pushing $API_IMAGE_NAME:latest as $API_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$API_IMAGE_NAME:latest" "$API_TARGET_REPO:$COMMIT_SHA"
+          echo "Tagging and pushing $API_IMAGE_NAME:$API_TAG as $API_TARGET_REPO:$COMMIT_SHA"
+          docker tag "$API_IMAGE_NAME:$API_TAG" "$API_TARGET_REPO:$COMMIT_SHA"
           docker push "$API_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$API_IMAGE_NAME:latest" "$API_TARGET_REPO:latest"
+          docker tag "$API_IMAGE_NAME:$API_TAG" "$API_TARGET_REPO:latest"
           docker push "$API_TARGET_REPO:latest"
           
           # Push frontend image
           FRONTEND_TARGET_REPO="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}-$FRONTEND_IMAGE_NAME"
-          echo "Tagging and pushing $FRONTEND_IMAGE_NAME:latest as $FRONTEND_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$FRONTEND_IMAGE_NAME:latest" "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
+          echo "Tagging and pushing $FRONTEND_IMAGE_NAME:$FRONTEND_TAG as $FRONTEND_TARGET_REPO:$COMMIT_SHA"
+          docker tag "$FRONTEND_IMAGE_NAME:$FRONTEND_TAG" "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
           docker push "$FRONTEND_TARGET_REPO:$COMMIT_SHA"
-          docker tag "$FRONTEND_IMAGE_NAME:latest" "$FRONTEND_TARGET_REPO:latest"
+          docker tag "$FRONTEND_IMAGE_NAME:$FRONTEND_TAG" "$FRONTEND_TARGET_REPO:latest"
           docker push "$FRONTEND_TARGET_REPO:latest"
           
           echo "Pushed images: $API_TARGET_REPO and $FRONTEND_TARGET_REPO"

@@ -619,6 +619,67 @@ grep "/app/dist$" **/Dockerfile
 
 ---
 
+## 13. aspire do build creates images with commit SHA tags, not always :latest
+
+**Tags:** aspire, ci, docker, aspire-do-build, image-tags, omission
+
+### Context
+CI workflow using `aspire do build` to create container images, then trying to tag and push them to a container registry (GHCR).
+
+### What Was Missed
+The workflow assumed `aspire do build` always creates images with the `:latest` tag:
+```bash
+docker tag "$IMAGE_NAME:latest" "$TARGET_REPO:$COMMIT_SHA"
+```
+
+In reality, `aspire do build` creates:
+- **.NET project images** (via `PublishContainer`): Tagged with `:latest`
+- **Dockerfile-based images** (via `PublishAsDockerFile()`): Often tagged with **commit SHA** (e.g., `frontendvue:83be6736c797...`), NOT `:latest`
+
+### Impact
+CI failed with:
+```
+Error response from daemon: No such image: frontendvue:latest
+Error response from daemon: No such image: frontend:latest
+```
+
+### What Fixed It
+Updated the CI workflow to dynamically discover the actual image tag:
+
+```bash
+find_image_tag() {
+  local image_name=$1
+  # First try :latest
+  if docker image inspect "$image_name:latest" >/dev/null 2>&1; then
+    echo "latest"
+    return 0
+  fi
+  # Otherwise find any tag for this image
+  local tag=$(docker images --format "{{.Tag}}" "$image_name" | head -1)
+  if [ -n "$tag" ]; then
+    echo "$tag"
+    return 0
+  fi
+  echo ""
+  return 1
+}
+
+API_TAG=$(find_image_tag "$API_IMAGE_NAME")
+FRONTEND_TAG=$(find_image_tag "$FRONTEND_IMAGE_NAME")
+
+docker tag "$API_IMAGE_NAME:$API_TAG" "$TARGET_REPO:$COMMIT_SHA"
+```
+
+### Reusable Rule
+When using `aspire do build` images in CI:
+1. Do NOT assume all images are tagged with `:latest`
+2. Dockerfile-based images (JavaScript frontends with `PublishAsDockerFile()`) may use commit SHA tags
+3. Use `docker images --format "{{.Tag}}" <image-name>` to discover the actual tag
+4. Implement a fallback mechanism: try `:latest` first, then discover available tags
+5. Always list images after build to debug tagging issues: `docker images | head -n 30`
+
+---
+
 ## Quick Reference Checklist
 
 ### Adding a new JavaScript frontend to Aspire
@@ -641,3 +702,4 @@ grep "/app/dist$" **/Dockerfile
 - [ ] **Pre-Aspire 13**: Use `dotnet publish /t:PublishContainer` for .NET projects + `docker build` for JavaScript frontends
 - [ ] If using `PublishWithContainerFiles()`, ensure Dockerfiles have `/app/dist` in final stage
 - [ ] Check `AppHost.cs` for `PublishAsDockerFile()` calls
+- [ ] **Do NOT assume `:latest` tags** - `aspire do build` may tag Dockerfile-based images with commit SHA; use dynamic tag discovery
