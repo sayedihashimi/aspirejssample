@@ -88,14 +88,14 @@ Pre-built container images are available on GitHub Container Registry (GHCR). Ea
 # Pull the Vue sample image
 docker pull ghcr.io/sayedihashimi/vue-apiservicevue:latest
 
-# Run it on port 15699
-docker run -d --name vue-apiservice -p 15699:8080 ghcr.io/sayedihashimi/vue-apiservicevue:latest
+# Run it (use any available port on your machine, e.g., 8080)
+docker run -d --name vue-apiservice -p 8080:8080 ghcr.io/sayedihashimi/vue-apiservicevue:latest
 
 # Open in browser
-# http://localhost:15699
+# http://localhost:8080
 ```
 
-Then open [http://localhost:15699](http://localhost:15699) in your browser to see the weather forecast app.
+Then open [http://localhost:8080](http://localhost:8080) (or whatever port you chose) in your browser to see the weather forecast app.
 
 ### Available Images
 
